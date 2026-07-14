@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amana — Compliance Suite (v0.1)</title>
+<style>
+  :root{
+    --navy:#0F2A43; --blue:#1F5C8A; --gold:#C8A24B; --ink:#1b2530; --muted:#5b6670;
+    --line:#dfe5ec; --bg:#eef2f6; --card:#ffffff; --soft:#f6f9fc;
+    --danger:#b4432c; --danger-bg:#fbece9; --warn:#8a6d1a; --warn-bg:#fbf3dc; --ok:#1e7a4b; --ok-bg:#e9f6ee;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5}
+  header{background:var(--navy);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .wm{font-weight:800;font-size:22px;letter-spacing:2px}
+  .wm b{color:var(--gold)}
+  .app-name{font-size:13px;color:#c9d6e2;border-left:1px solid #38506a;padding-left:16px}
+  .badge{background:var(--gold);color:#3a2e07;font-weight:700;font-size:11px;padding:3px 8px;border-radius:20px}
+  .privacy{margin-left:auto;font-size:11.5px;color:#9fb3c6;display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ea87a;display:inline-block}
+
+  .topnav{display:flex;gap:6px;padding:12px 22px 0;background:var(--bg);flex-wrap:wrap}
+  .topnav button{padding:9px 15px;border:1px solid var(--line);background:#fff;border-radius:9px;font-weight:700;color:var(--muted);cursor:pointer;font-size:13px}
+  .topnav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .view[hidden]{display:none}
+
+  .tabs{display:flex;gap:8px;padding:14px 22px 0;background:var(--bg);flex-wrap:wrap}
+  .tab{padding:9px 16px;border:1px solid var(--line);border-bottom:none;background:var(--soft);
+    border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;color:var(--muted);font-size:13px}
+  .tab.active{background:var(--card);color:var(--navy);box-shadow:0 -2px 0 var(--gold) inset}
+  .blurb{padding:8px 22px 0;color:var(--muted);font-size:12.5px}
+
+  main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 22px 40px;max-width:1400px}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:14px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .panel h2{margin:0 0 12px;font-size:14px;color:var(--navy);display:flex;align-items:center;gap:8px}
+  .panel h2 .n{background:var(--navy);color:#fff;width:20px;height:20px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row.one{grid-template-columns:1fr}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .field label{font-size:12px;color:var(--muted);font-weight:600}
+  input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid #cfe0ef;border-color:var(--blue)}
+  textarea{resize:vertical;min-height:70px}
+  .hint{font-size:11.5px;color:var(--muted)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{padding:6px 12px;border:none;background:#fff;cursor:pointer;font-weight:600;color:var(--muted);font-size:12.5px}
+  .seg button.on{background:var(--blue);color:#fff}
+
+  .indicators{display:flex;flex-direction:column;gap:10px}
+  .igroup{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft)}
+  .igroup .gt{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+  .chk{display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:13px;cursor:pointer}
+  .chk input{width:auto;margin-top:3px}
+
+  .btn{padding:9px 15px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--navy);font-weight:600;cursor:pointer;font-size:13px}
+  .btn:hover{background:var(--soft)}
+  .btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .btn.primary:hover{background:#173954}
+  .btn.gold{background:var(--gold);color:#3a2e07;border-color:var(--gold)}
+  .btn.spin{opacity:.55;pointer-events:none}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+  .status{border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:8px}
+  .status.ok{background:var(--ok-bg);color:var(--ok);border:1px solid #bfe6cf}
+  .status.err{background:var(--danger-bg);color:var(--danger);border:1px solid #f0cabf}
+  .status.warn{background:var(--warn-bg);color:var(--warn);border:1px solid #ecdca6}
+  .status b{display:block;margin-bottom:2px}
+  .status ul{margin:4px 0 0;padding-left:18px}
+
+  .outbox textarea{min-height:280px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
+  pre.xml{margin:0;background:#0f1c28;color:#d6e4f0;padding:12px;border-radius:8px;overflow:auto;max-height:300px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.45;white-space:pre}
+  .xml .t{color:#7fb0d8}
+  .audit{font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+
+  /* CDD / UBO */
+  .badge-risk{padding:4px 12px;border-radius:20px;font-weight:700;font-size:13px;display:inline-block}
+  .risk-Low{background:var(--ok-bg);color:var(--ok)} .risk-Medium{background:var(--warn-bg);color:var(--warn)} .risk-High{background:var(--danger-bg);color:var(--danger)}
+  .orow{display:flex;gap:6px;align-items:center;margin:5px 0;flex-wrap:wrap}
+  .orow input,.orow select{padding:6px 8px;font-size:12.5px}
+  .okids{border-left:2px dashed var(--line);margin:2px 0 2px 6px;padding-left:8px}
+  .xbtn{padding:5px 9px;color:var(--danger);font-weight:700}
+  .subbtn{padding:5px 9px;font-size:12px}
+  .thumb{max-width:150px;max-height:110px;border:1px solid var(--line);border-radius:8px;margin-top:8px;display:block}
+  .ubocard{background:var(--soft);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
+  .warnbar{background:var(--warn-bg);color:var(--warn);border:1px solid #ecdca6;border-radius:8px;padding:9px 11px;font-size:12.5px;margin-bottom:10px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:80%;text-align:center}
+  .toast.show{opacity:1}
+  footer{padding:14px 22px 30px;color:var(--muted);font-size:11.5px;max-width:1400px}
+  footer .disc{background:#fff;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px}
+  .req{color:var(--danger)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wm">AMA<b>NA</b></div>
+  <div class="app-name">Compliance Suite</div>
+  <span class="badge">v0.1 · internal</span>
+  <div class="privacy"><span class="dot"></span> Runs locally — your data stays on this device</div>
+</header>
+
+<nav class="topnav" id="topnav">
+  <button data-view="filing" class="on">① goAML Filing Engine</button>
+  <button data-view="cdd">② CDD &amp; UBO onboarding</button>
+  <button data-view="ai">⚙ AI settings</button>
+</nav>
+
+<!-- ============================ FILING VIEW ============================ -->
+<section id="view-filing" class="view">
+<div class="tabs" id="tabs">
+  <div class="tab active" data-type="STR">STR — Suspicious Transaction</div>
+  <div class="tab" data-type="REAR">REAR — Real Estate</div>
+  <div class="tab" data-type="DPMSR">DPMSR — Precious Metals</div>
+</div>
+<div class="blurb" id="blurb"></div>
+
+<main>
+  <div class="col">
+    <div class="panel">
+      <h2><span class="n">1</span> Reporting entity (MLRO)
+        <button class="btn" style="margin-left:auto;padding:4px 10px;font-size:11.5px" onclick="saveProfile()">Save profile</button>
+      </h2>
+      <div class="row">
+        <div class="field"><label>Entity name <span class="req">*</span></label><input id="e_name" placeholder="e.g. Skyline Properties LLC"></div>
+        <div class="field"><label>Business type</label><input id="e_type" placeholder="e.g. Real-estate brokerage"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Trade licence no.</label><input id="e_license" placeholder="CN-1234567"></div>
+        <div class="field"><label>goAML entity ID</label><input id="e_rentity" placeholder="rentity_id"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>MLRO name <span class="req">*</span></label><input id="e_mlro" placeholder="Accountable person"></div>
+        <div class="field"><label>MLRO email</label><input id="e_email" placeholder="mlro@company.ae"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Emirate</label><input id="e_emirate" value="Dubai"></div>
+        <div class="field"><label>Prepared by</label><input id="e_preparedby" placeholder="defaults to MLRO"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">2</span> Subject of the report</h2>
+      <div class="field"><label>Subject type</label>
+        <div class="seg" id="kindseg">
+          <button type="button" class="on" data-kind="person" onclick="setKind('person')">Individual</button>
+          <button type="button" data-kind="entity" onclick="setKind('entity')">Company / entity</button>
+        </div>
+      </div>
+      <div class="field"><label>Full / entity name <span class="req">*</span></label><input id="s_name" placeholder="Name of the person or company"></div>
+      <div id="person-fields">
+        <div class="row">
+          <div class="field"><label>Nationality</label><input id="s_nationality"></div>
+          <div class="field"><label>Date of birth</label><input id="s_dob" placeholder="YYYY-MM-DD"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>ID type</label><select id="s_idtype"><option>Passport</option><option>Emirates ID</option><option>Other</option></select></div>
+          <div class="field"><label>ID number</label><input id="s_idnumber"></div>
+        </div>
+      </div>
+      <div id="entity-fields" style="display:none">
+        <div class="field"><label>Trade licence</label><input id="s_tradelicense"></div>
+        <div class="row" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:10px">
+          <div class="field" style="margin-bottom:0"><label>UBO name (ultimate owner)</label><input id="s_ubo" placeholder="The real human owner"></div>
+          <div class="field" style="margin-bottom:0"><label>UBO nationality</label><input id="s_ubonat"></div>
+          <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>UBO ID number</label><input id="s_uboid"></div>
+        </div>
+      </div>
+      <div class="field"><label>Address</label><input id="s_address"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">3</span> Transaction</h2>
+      <div class="row">
+        <div class="field"><label>Date</label><input id="t_date" placeholder="YYYY-MM-DD"></div>
+        <div class="field"><label>Amount (AED) <span class="req">*</span></label><input id="t_amount" placeholder="e.g. 55000"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Method</label>
+          <select id="t_method"><option value="cash">Cash</option><option value="wire">Wire / transfer</option>
+            <option value="cheque">Cheque</option><option value="crypto">Virtual asset</option><option value="card">Card</option><option value="other">Other</option></select></div>
+        <div class="field"><label>Direction</label>
+          <select id="t_direction"><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></div>
+      </div>
+      <div class="field"><label>Counterparty</label><input id="t_counterparty" placeholder="Who the money came from / went to"></div>
+      <div class="field" id="row-propref" style="display:none"><label>Property reference (REAR)</label><input id="t_propref" placeholder="e.g. Freehold Villa, Palm Jumeirah — Plot 12"></div>
+      <div class="field" id="row-goods" style="display:none"><label>Goods description (DPMSR)</label><input id="t_goods" placeholder="e.g. 1kg gold bars x2"></div>
+    </div>
+
+    <div class="panel" id="sec-suspicion">
+      <h2><span class="n">4</span> Indicators &amp; grounds <span style="font-weight:500;color:var(--muted);font-size:11.5px">(STR)</span></h2>
+      <div class="indicators" id="indicators"></div>
+      <div class="row" style="margin-top:12px">
+        <div class="field"><label>PEP match?</label><select id="scr_pep"><option value="unknown">Not screened</option><option value="no">No match</option><option value="yes">Match</option></select></div>
+        <div class="field"><label>Sanctions / watchlist match?</label><select id="scr_sanctions"><option value="unknown">Not screened</option><option value="no">No match</option><option value="yes">Match</option></select></div>
+      </div>
+      <div class="field"><label>Grounds for suspicion <span class="req">*</span></label>
+        <textarea id="g_grounds" placeholder="What made this suspicious? Describe the facts plainly — Amana will structure it."></textarea></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n" id="actn-num">5</span> Action taken</h2>
+      <div class="field"><label>Action</label>
+        <textarea id="g_action" placeholder="e.g. Transaction held; relationship under review pending FIU guidance."></textarea></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel">
+      <div class="btnrow">
+        <button class="btn primary" onclick="generate()">⚙ Generate report</button>
+        <button class="btn gold" onclick="loadSample()">Load sample</button>
+        <button class="btn" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="panel" id="valpanel" style="display:none">
+      <h2><span class="n">✓</span> Validation &amp; deadline</h2>
+      <div id="valout"></div>
+    </div>
+
+    <div class="panel" id="outpanel" style="display:none">
+      <h2><span class="n">✎</span> Report narrative <span style="font-weight:500;color:var(--muted);font-size:11.5px">— review &amp; edit before filing</span></h2>
+      <div class="outbox"><textarea id="narrative" spellcheck="false"></textarea></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn gold" id="polishBtn" onclick="polish()">✨ AI polish</button>
+        <button class="btn" onclick="undoPolish()" id="undoBtn" style="display:none">Undo</button>
+        <button class="btn" onclick="copyEl('narrative')">Copy</button>
+        <button class="btn" onclick="download('narrative','md')">Download .md</button>
+      </div>
+      <div class="hint" id="polishHint" style="margin-top:6px">AI polish uses your AI settings. With no provider it does an offline tidy. Nothing is sent unless you set a key.</div>
+
+      <h2 style="margin-top:18px"><span class="n">&lt;/&gt;</span> goAML XML</h2>
+      <pre class="xml" id="xmlout"></pre>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" onclick="copyEl('xmlraw')">Copy XML</button>
+        <button class="btn" onclick="download('xmlraw','xml')">Download .xml</button>
+        <button class="btn" onclick="saveDraft()">Save draft (local)</button>
+      </div>
+      <textarea id="xmlraw" style="display:none"></textarea>
+      <div class="audit" id="audit"></div>
+    </div>
+  </div>
+</main>
+</section>
+
+<!-- ============================ CDD / UBO VIEW ============================ -->
+<section id="view-cdd" class="view" hidden>
+<main>
+  <div class="col">
+    <div class="panel">
+      <h2><span class="n">A</span> Customer</h2>
+      <div class="field"><label>Customer / entity name <span class="req">*</span></label><input id="c_name" placeholder="Person or company being onboarded"></div>
+      <div class="field"><label>Customer type</label>
+        <div class="seg" id="ckindseg">
+          <button type="button" class="on" data-kind="person" onclick="setCKind('person')">Individual</button>
+          <button type="button" data-kind="entity" onclick="setCKind('entity')">Company / entity</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Nationality / jurisdiction</label><input id="c_nationality"></div>
+        <div class="field"><label>Activity / business</label><input id="c_activity" placeholder="e.g. property purchase, gold trade"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">B</span> Documents <span style="font-weight:500;color:var(--muted);font-size:11.5px">— optional AI extract</span></h2>
+      <div class="hint" style="margin-bottom:8px">Snap or upload a passport / Emirates ID / trade licence. With AI settings on, Amana reads the fields; otherwise type them in.</div>
+      <input type="file" id="c_file" accept="image/*" capture="environment" onchange="onDoc(event)">
+      <img id="c_thumb" class="thumb" style="display:none" alt="document preview">
+      <div class="btnrow" style="margin:10px 0">
+        <button class="btn gold" id="extractBtn" onclick="extractDoc()">✨ Extract with AI</button>
+        <span class="hint" id="extractStatus"></span>
+      </div>
+      <div class="row">
+        <div class="field"><label>ID type</label><select id="c_idtype"><option>Passport</option><option>Emirates ID</option><option>Trade licence</option><option>Other</option></select></div>
+        <div class="field"><label>ID / licence number</label><input id="c_idnum"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date of birth</label><input id="c_dob" placeholder="YYYY-MM-DD"></div>
+        <div class="field"><label>Address</label><input id="c_address"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">C</span> Risk factors</h2>
+      <div class="indicators" id="riskfactors"></div>
+      <button class="btn primary" style="margin-top:12px" onclick="assessRisk()">Assess risk</button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel">
+      <h2><span class="n">D</span> Ownership &amp; UBO</h2>
+      <div class="hint" style="margin-bottom:8px">Add the shareholders of the company. If a shareholder is itself a company, set its type to <b>Company</b> and add its sub-owners. Amana multiplies the percentages down each chain and flags anyone at <b>25%+</b> as a UBO.</div>
+      <div id="owners-host"></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" onclick="addOwner()">+ Add owner</button>
+        <button class="btn primary" onclick="traceUBOui()">Trace UBO</button>
+        <button class="btn gold" onclick="cddLoadSample()">Load sample</button>
+      </div>
+      <div id="ubo-out" style="margin-top:12px"></div>
+    </div>
+
+    <div class="panel" id="assessPanel" style="display:none">
+      <h2><span class="n">E</span> Assessment</h2>
+      <div id="risk-out"></div>
+    </div>
+
+    <div class="panel" id="cddSummaryPanel" style="display:none">
+      <h2><span class="n">✓</span> CDD summary</h2>
+      <div id="cdd-summary"></div>
+      <div class="btnrow" style="margin-top:10px">
+        <button class="btn" onclick="copyEl('cddraw')">Copy</button>
+        <button class="btn" onclick="download('cddraw','md')">Download .md</button>
+        <button class="btn primary" onclick="useInFiling()">Use subject in Filing Engine →</button>
+      </div>
+      <textarea id="cddraw" style="display:none"></textarea>
+    </div>
+  </div>
+</main>
+</section>
+
+<!-- ============================ AI SETTINGS VIEW ============================ -->
+<section id="view-ai" class="view" hidden>
+<main style="grid-template-columns:1fr;max-width:760px">
+  <div class="col">
+    <div class="panel">
+      <h2><span class="n">⚙</span> AI settings <span style="font-weight:500;color:var(--muted);font-size:11.5px">— optional</span></h2>
+      <div class="warnbar"><b>Privacy:</b> With a cloud provider selected, the narrative or document image you choose to process is sent to that provider. Amana redacts IDs/emails first when "redact" is on, and restores them locally. For production, route to an in-region / enterprise endpoint. Leave provider on <b>Local only</b> to keep everything on this device.</div>
+      <div class="field"><label>Provider</label>
+        <select id="ai_provider">
+          <option value="local">Local only — no AI (offline tidy)</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI-compatible (OpenAI / Azure / gateway)</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="field"><label>API key</label><input id="ai_key" type="password" placeholder="stored only on this device"></div>
+        <div class="field"><label>Model</label><input id="ai_model" placeholder="e.g. claude-sonnet-5 / gpt-4o-mini"></div>
+      </div>
+      <div class="field"><label>Base URL <span style="font-weight:400">(OpenAI-compatible only)</span></label><input id="ai_baseurl" placeholder="https://api.openai.com/v1"></div>
+      <label class="chk" style="margin:6px 0"><input type="checkbox" id="ai_redact" checked><span>Redact IDs &amp; emails before sending (recommended) — restored locally after.</span></label>
+      <div class="btnrow"><button class="btn primary" onclick="saveAI()">Save settings</button><button class="btn" onclick="testAIkeyNote()">About browser access</button></div>
+      <div class="hint" style="margin-top:10px">Note: calling public LLM APIs directly from a file opened in the browser can be blocked by CORS. Anthropic is called with the browser-access header; some setups still need a small local proxy or Amana's future backend. The offline "tidy" always works.</div>
+    </div>
+  </div>
+</main>
+</section>
+
+<footer>
+  <div class="disc">
+    <b>Human-in-the-loop &amp; scope.</b> Amana is decision-support: a licensed MLRO must review, approve and file every report and confirm every UBO/risk determination — Amana does not submit on your behalf.
+    goAML XML is modelled on the schema and must be reconciled with the UAE FIU's current XSD before live submission. UBO tracing follows the 25% control test as a guide, not legal advice.
+    v0.1 runs in your browser; nothing is sent anywhere unless you enable a cloud AI provider in settings.
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="engine.js"></script>
+<script src="cdd.js"></script>
+<script src="ai.js"></script>
+<script>
+  var E=window.AmanaEngine, C=window.AmanaCDD, AI=window.AmanaAI;
+  var state={ reportType:"STR", kind:"person", prevNarrative:null,
+              cdd:{ kind:"entity", owners:[], docImage:null } };
+
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function val(id){var el=document.getElementById(id);return el?el.value.trim():"";}
+  function set(id,v){var el=document.getElementById(id);if(el)el.value=v==null?"":v;}
+  var toastTimer;
+  function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove("show");},2200);}
+
+  // ---------- top-level view switch ----------
+  function switchView(v){
+    ["filing","cdd","ai"].forEach(function(x){document.getElementById("view-"+x).hidden=(x!==v);});
+    document.querySelectorAll("#topnav button").forEach(function(b){b.classList.toggle("on",b.dataset.view===v);});
+  }
+  document.querySelectorAll("#topnav button").forEach(function(b){b.onclick=function(){switchView(b.dataset.view);};});
+
+  // ================= FILING ENGINE =================
+  (function renderIndicators(){
+    var host=document.getElementById("indicators");host.innerHTML="";
+    E.INDICATORS.forEach(function(g){
+      var box=document.createElement("div");box.className="igroup";
+      var t=document.createElement("div");t.className="gt";t.textContent=g.group;box.appendChild(t);
+      g.items.forEach(function(it){
+        var lab=document.createElement("label");lab.className="chk";
+        lab.innerHTML='<input type="checkbox" class="indicator" value="'+it.code+'"><span>'+esc(it.label)+'</span>';
+        box.appendChild(lab);
+      });
+      host.appendChild(box);
+    });
+  })();
+
+  function setBlurb(){var rt=E.REPORT_TYPES[state.reportType];
+    document.getElementById("blurb").innerHTML="<b>"+esc(rt.label)+".</b> "+esc(rt.blurb)+" &nbsp;·&nbsp; <b>Deadline:</b> "+esc(rt.deadline);}
+  function switchTab(type){
+    state.reportType=type;
+    document.querySelectorAll(".tab").forEach(function(t){t.classList.toggle("active",t.dataset.type===type);});
+    var isSTR=type==="STR";
+    document.getElementById("sec-suspicion").style.display=isSTR?"":"none";
+    document.getElementById("row-propref").style.display=type==="REAR"?"":"none";
+    document.getElementById("row-goods").style.display=type==="DPMSR"?"":"none";
+    document.getElementById("actn-num").textContent=isSTR?"5":"4";
+    setBlurb();
+  }
+  document.querySelectorAll(".tab").forEach(function(t){t.onclick=function(){switchTab(t.dataset.type);};});
+
+  function setKind(k){state.kind=k;
+    document.querySelectorAll("#kindseg button").forEach(function(b){b.classList.toggle("on",b.dataset.kind===k);});
+    document.getElementById("person-fields").style.display=k==="person"?"":"none";
+    document.getElementById("entity-fields").style.display=k==="entity"?"":"none";}
+
+  function collect(){
+    return {reportType:state.reportType,
+      entity:{name:val("e_name"),type:val("e_type"),licenseNo:val("e_license"),rentityId:val("e_rentity"),
+              mlroName:val("e_mlro"),mlroEmail:val("e_email"),emirate:val("e_emirate")},
+      preparedBy:val("e_preparedby")||val("e_mlro"),
+      subject:{kind:state.kind,fullName:val("s_name"),nationality:val("s_nationality"),idType:val("s_idtype"),
+               idNumber:val("s_idnumber"),dob:val("s_dob"),address:val("s_address"),
+               tradeLicense:val("s_tradelicense"),uboName:val("s_ubo"),uboNationality:val("s_ubonat"),uboIdNumber:val("s_uboid")},
+      txn:{date:val("t_date"),amount:val("t_amount"),currency:"AED",method:val("t_method"),direction:val("t_direction"),
+           counterparty:val("t_counterparty"),propertyRef:val("t_propref"),goodsDesc:val("t_goods")},
+      indicators:Array.prototype.slice.call(document.querySelectorAll(".indicator:checked")).map(function(c){return c.value;}),
+      grounds:val("g_grounds"),screening:{pep:val("scr_pep"),sanctions:val("scr_sanctions")},action:val("g_action")};
+  }
+
+  function generate(){
+    var data=collect();var v=E.validate(data);
+    document.getElementById("valpanel").style.display="";
+    var html="";
+    if(v.errors.length){html+='<div class="status err"><b>✗ '+v.errors.length+' issue(s) to fix</b><ul>'+v.errors.map(li).join("")+'</ul></div>';}
+    else{html+='<div class="status ok"><b>✓ Ready for MLRO review</b>All required fields present.</div>';}
+    if(v.warnings.length){html+='<div class="status warn"><b>⚠ '+v.warnings.length+' warning(s)</b><ul>'+v.warnings.map(li).join("")+'</ul></div>';}
+    if(v.threshold.applicable){html+='<div class="status '+(v.threshold.triggered?"err":"warn")+'"><b>AED 55,000 threshold</b>'+esc(v.threshold.note)+'</div>';}
+    html+='<div class="status ok" style="background:#eef4fa;color:var(--blue);border-color:#cfe0ef"><b>Deadline</b>'+esc(v.deadline)+'</div>';
+    document.getElementById("valout").innerHTML=html;
+
+    var narr=E.buildNarrative(data),xml=E.buildGoAmlXml(data);
+    document.getElementById("outpanel").style.display="";
+    document.getElementById("narrative").value=narr;
+    state.prevNarrative=null;document.getElementById("undoBtn").style.display="none";
+    document.getElementById("xmlraw").value=xml;
+    document.getElementById("xmlout").innerHTML=highlight(xml);
+    document.getElementById("audit").innerHTML="Prepared by <b>"+esc(data.preparedBy||"[MLRO]")+"</b> · "+new Date().toLocaleString()+" · "+state.reportType+" · <i>pending MLRO approval</i>";
+    document.getElementById("valpanel").scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  function li(s){return "<li>"+esc(s)+"</li>";}
+  function highlight(xml){return esc(xml).replace(/(&lt;\/?)([\w:_]+)/g,'$1<span class="t">$2</span>');}
+
+  // ---- AI polish ----
+  function polish(){
+    var draft=document.getElementById("narrative").value;
+    if(!draft){toast("Generate a report first");return;}
+    var s=getAI();var btn=document.getElementById("polishBtn");
+    btn.classList.add("spin");btn.textContent="✨ Polishing…";
+    AI.polishNarrative(draft,{provider:s.provider,apiKey:s.key,model:s.model,baseUrl:s.baseUrl,redact:s.redact,reportType:state.reportType})
+      .then(function(res){
+        btn.classList.remove("spin");btn.textContent="✨ AI polish";
+        if(res.ok){
+          state.prevNarrative=draft;document.getElementById("undoBtn").style.display="";
+          document.getElementById("narrative").value=res.text;
+          toast(res.mode==="ai"?("Polished with AI"+(res.redacted?" ("+res.redacted+" IDs protected)":"")):"Tidied offline (no AI provider set)");
+        }else{toast("AI error: "+res.error);}
+      });
+  }
+  function undoPolish(){if(state.prevNarrative!=null){document.getElementById("narrative").value=state.prevNarrative;state.prevNarrative=null;document.getElementById("undoBtn").style.display="none";toast("Reverted");}}
+
+  // ---- exports / persistence ----
+  function copyEl(id){var t=document.getElementById(id);
+    function fb(){var shown=t.style.display!=="none";t.style.display="block";t.select();try{document.execCommand("copy");toast("Copied");}catch(e){toast("Press Ctrl/Cmd+C");}if(!shown)t.style.display="none";}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t.value).then(function(){toast("Copied");},fb);}else{fb();}}
+  function download(id,ext){var t=document.getElementById(id).value;var name=(state.reportType||"amana")+"_"+Date.now()+"."+ext;
+    var blob=new Blob([t],{type:"text/plain"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();toast("Downloaded "+name);}
+  function saveProfile(){var p={};["e_name","e_type","e_license","e_rentity","e_mlro","e_email","e_emirate","e_preparedby"].forEach(function(id){p[id]=val(id);});
+    try{localStorage.setItem("amana_profile",JSON.stringify(p));toast("Entity profile saved on this device");}catch(e){toast("Could not save (storage off)");}}
+  function loadProfile(){try{var p=JSON.parse(localStorage.getItem("amana_profile")||"{}");Object.keys(p).forEach(function(id){set(id,p[id]);});}catch(e){}}
+  function saveDraft(){try{var d=JSON.parse(localStorage.getItem("amana_drafts")||"[]");d.unshift({t:new Date().toLocaleString(),type:state.reportType,data:collect()});
+    localStorage.setItem("amana_drafts",JSON.stringify(d.slice(0,20)));toast("Draft saved locally ("+d.length+" stored)");}catch(e){toast("Could not save draft");}}
+  function clearForm(){document.querySelectorAll("#view-filing input,#view-filing textarea").forEach(function(el){if(el.id!=="e_emirate")el.value="";});
+    set("e_emirate","Dubai");document.querySelectorAll(".indicator:checked").forEach(function(c){c.checked=false;});
+    set("scr_pep","unknown");set("scr_sanctions","unknown");
+    document.getElementById("valpanel").style.display="none";document.getElementById("outpanel").style.display="none";loadProfile();toast("Cleared");}
+
+  function loadSample(){switchTab("STR");setKind("person");
+    set("e_name","Skyline Properties LLC");set("e_type","Real-estate brokerage");set("e_license","CN-1234567");set("e_rentity","778812");
+    set("e_mlro","Rana Haddad");set("e_email","mlro@skyline.ae");set("e_emirate","Dubai");
+    set("s_name","John A. Doe");set("s_nationality","Country X");set("s_idnumber","P1234567");set("s_dob","1980-05-02");set("s_address","Marina Tower, Dubai");
+    set("t_date","2026-07-03");set("t_amount","6000000");document.getElementById("t_method").value="cash";set("t_counterparty","Third-party account (unrelated)");
+    ["STR-STRUCT","STR-3RDPARTY","STR-SOF","STR-PEP"].forEach(function(code){var c=document.querySelector('.indicator[value="'+code+'"]');if(c)c.checked=true;});
+    set("scr_pep","yes");
+    set("g_grounds","Buyer insisted on paying AED 6,000,000 largely in cash routed through an unrelated third party and could not evidence source of funds.");
+    set("g_action","Transaction placed on hold; relationship under enhanced review pending FIU guidance.");
+    generate();toast("Sample loaded — demo case");}
+
+  // ================= CDD / UBO =================
+  (function renderRiskFactors(){var host=document.getElementById("riskfactors");host.innerHTML="";
+    var box=document.createElement("div");box.className="igroup";
+    C.RISK_FACTORS.forEach(function(r){var lab=document.createElement("label");lab.className="chk";
+      lab.innerHTML='<input type="checkbox" class="rfactor" value="'+r.key+'"><span>'+esc(r.label)+'</span>';box.appendChild(lab);});
+    host.appendChild(box);})();
+
+  function setCKind(k){state.cdd.kind=k;document.querySelectorAll("#ckindseg button").forEach(function(b){b.classList.toggle("on",b.dataset.kind===k);});}
+
+  // ownership tree
+  function newNode(){return {name:"",percent:"",kind:"person",nationality:"",idNumber:"",owners:[]};}
+  function nodeAt(pathArr){var arr=state.cdd.owners,node=null;for(var i=0;i<pathArr.length;i++){node=arr[+pathArr[i]];if(!node)return null;arr=node.owners=node.owners||[];}return node;}
+  function addOwner(){state.cdd.owners.push(newNode());renderOwners();}
+  function addAt(pathArr){var n=nodeAt(pathArr);if(n){n.kind="entity";n.owners=n.owners||[];n.owners.push(newNode());}renderOwners();}
+  function removeAt(pathArr){var parent=pathArr.slice(0,-1);var idx=+pathArr[pathArr.length-1];var arr=parent.length?nodeAt(parent).owners:state.cdd.owners;arr.splice(idx,1);renderOwners();}
+  function setAt(pathArr,f,v){var n=nodeAt(pathArr);if(n)n[f]=v;}
+
+  function renderOwners(){var host=document.getElementById("owners-host");host.innerHTML="";
+    if(!state.cdd.owners.length){host.innerHTML='<div class="hint">No owners yet — click “Add owner”.</div>';return;}
+    state.cdd.owners.forEach(function(node,i){host.appendChild(renderNode(node,[i],0));});}
+  function renderNode(node,path,depth){
+    var wrap=document.createElement("div");var ps=path.join(".");var isEnt=node.kind==="entity";
+    var row=document.createElement("div");row.className="orow";row.style.marginLeft=(depth*10)+"px";
+    row.innerHTML=
+      '<input data-path="'+ps+'" data-f="name" placeholder="Name" value="'+esc(node.name)+'" style="flex:1;min-width:120px">'
+      +'<input data-path="'+ps+'" data-f="percent" placeholder="%" value="'+esc(node.percent)+'" style="width:60px">'
+      +'<select data-path="'+ps+'" data-f="kind"><option value="person"'+(!isEnt?" selected":"")+'>Person</option><option value="entity"'+(isEnt?" selected":"")+'>Company</option></select>'
+      +(isEnt?"":'<input data-path="'+ps+'" data-f="nationality" placeholder="Nat." value="'+esc(node.nationality)+'" style="width:80px"><input data-path="'+ps+'" data-f="idNumber" placeholder="ID" value="'+esc(node.idNumber)+'" style="width:90px">')
+      +'<button class="btn xbtn" data-x="'+ps+'">✕</button>'
+      +(isEnt?'<button class="btn subbtn" data-sub="'+ps+'">+ sub</button>':"");
+    wrap.appendChild(row);
+    if(isEnt){var kids=document.createElement("div");kids.className="okids";(node.owners||[]).forEach(function(c,j){kids.appendChild(renderNode(c,path.concat([j]),depth+1));});wrap.appendChild(kids);}
+    return wrap;
+  }
+  // event delegation for the owners tree
+  (function(){var host=document.getElementById("owners-host");
+    host.addEventListener("input",function(e){var t=e.target,p=t.getAttribute&&t.getAttribute("data-path"),f=t.getAttribute&&t.getAttribute("data-f");
+      if(p!==null&&f&&t.tagName==="INPUT")setAt(p.split("."),f,t.value);});
+    host.addEventListener("change",function(e){var t=e.target;if(t.getAttribute&&t.getAttribute("data-f")==="kind"){setAt(t.getAttribute("data-path").split("."),"kind",t.value);renderOwners();}});
+    host.addEventListener("click",function(e){var t=e.target;if(t.getAttribute&&t.getAttribute("data-x")!==null&&t.hasAttribute("data-x")){removeAt(t.getAttribute("data-x").split("."));}
+      else if(t.hasAttribute&&t.hasAttribute("data-sub")){addAt(t.getAttribute("data-sub").split("."));}});
+  })();
+
+  function traceUBOui(){
+    if(!state.cdd.owners.length){toast("Add owners first");return;}
+    var subj={name:val("c_name")||"Subject company",kind:"entity",owners:state.cdd.owners};
+    var r=C.traceUBO(subj);state.cdd.ubo=r;
+    var h="";
+    if(r.hasUBO){h+='<div class="status ok"><b>✓ '+r.ubos.length+' UBO(s) identified (≥25%)</b></div>';
+      r.ubos.forEach(function(p){h+='<div class="ubocard"><b>'+esc(p.name)+'</b> — '+p.effective+'%'+(p.nationality?" · "+esc(p.nationality):"")+'<div class="hint">'+esc(p.chains.sort(function(a,b){return b.percent-a.percent;})[0].path)+'</div></div>';});
+    }else{h+='<div class="status warn"><b>⚠ No 25%+ owner</b>'+esc(r.fallback)+'</div>';}
+    var minor=r.persons.filter(function(p){return p.effective<r.threshold;});
+    if(minor.length){h+='<div class="hint" style="margin-top:6px"><b>Below threshold:</b> '+minor.map(function(p){return esc(p.name)+" ("+p.effective+"%)";}).join(", ")+'</div>';}
+    h+='<div class="hint" style="margin-top:4px">Traced '+r.persons.length+' natural person(s) across '+r.layers+' ownership layer(s); total '+r.totalTraced+'%.</div>';
+    document.getElementById("ubo-out").innerHTML=h;
+    buildCddSummary();
+  }
+
+  function assessRisk(){
+    var f={};document.querySelectorAll(".rfactor:checked").forEach(function(c){f[c.value]=true;});
+    var r=C.riskRate(f);state.cdd.risk=r;
+    var h='<div style="margin-bottom:8px">Risk level: <span class="badge-risk risk-'+r.level+'">'+r.level+'</span> <span class="hint">(score '+r.score+')</span></div>';
+    h+='<div class="status '+(r.level==="High"?"err":r.level==="Medium"?"warn":"ok")+'"><b>Required actions</b><ul>'+r.actions.map(li).join("")+'</ul></div>';
+    document.getElementById("assessPanel").style.display="";document.getElementById("risk-out").innerHTML=h;
+    buildCddSummary();
+  }
+
+  function buildCddSummary(){
+    var u=state.cdd.ubo,r=state.cdd.risk;
+    var lines=[];
+    lines.push("CDD SUMMARY — "+(val("c_name")||"[customer]"));
+    lines.push("Prepared: "+new Date().toLocaleString());
+    lines.push("Customer type: "+state.cdd.kind+" | Nationality/jurisdiction: "+(val("c_nationality")||"[n/a]")+" | Activity: "+(val("c_activity")||"[n/a]"));
+    lines.push("ID: "+(val("c_idtype"))+" "+(val("c_idnum")||"[n/a]")+" | DOB: "+(val("c_dob")||"[n/a]"));
+    lines.push("");
+    if(u){ if(u.hasUBO){lines.push("Ultimate beneficial owner(s) [>=25%]:");u.ubos.forEach(function(p){lines.push("  - "+C.describeUBO(p)+(p.nationality?" ["+p.nationality+"]":""));});}
+      else{lines.push("UBO: none at 25%+. "+u.fallback);} lines.push(""); }
+    if(r){lines.push("Risk rating: "+r.level+" (score "+r.score+")");lines.push("Actions:");r.actions.forEach(function(a){lines.push("  - "+a);});lines.push("");}
+    lines.push("— Prepared via Amana. A licensed MLRO must review and approve this assessment.");
+    var text=lines.join("\n");
+    document.getElementById("cddraw").value=text;
+    document.getElementById("cdd-summary").innerHTML="<pre style='white-space:pre-wrap;font-family:inherit;margin:0'>"+esc(text)+"</pre>";
+    document.getElementById("cddSummaryPanel").style.display="";
+  }
+
+  function useInFiling(){
+    switchView("filing");
+    setKind(state.cdd.kind==="entity"?"entity":"person");
+    set("s_name",val("c_name"));set("s_nationality",val("c_nationality"));set("s_address",val("c_address"));
+    set("s_idnumber",val("c_idnum"));set("s_dob",val("c_dob"));
+    if(state.cdd.kind==="entity"&&state.cdd.ubo&&state.cdd.ubo.ubos&&state.cdd.ubo.ubos[0]){
+      set("s_ubo",state.cdd.ubo.ubos[0].name);set("s_ubonat",state.cdd.ubo.ubos[0].nationality);set("s_uboid",state.cdd.ubo.ubos[0].idNumber);}
+    toast("Subject copied into the Filing Engine");
+  }
+
+  function onDoc(ev){var f=ev.target.files&&ev.target.files[0];if(!f)return;var rd=new FileReader();
+    rd.onload=function(){state.cdd.docImage=rd.result;var img=document.getElementById("c_thumb");img.src=rd.result;img.style.display="block";toast("Document loaded");};rd.readAsDataURL(f);}
+  function extractDoc(){
+    if(!state.cdd.docImage){toast("Upload a document image first");return;}
+    var s=getAI();
+    if(!AI.hasProvider({provider:s.provider,apiKey:s.key})){toast("Set an AI provider + key in ⚙ AI settings, or type fields manually");return;}
+    var btn=document.getElementById("extractBtn");btn.classList.add("spin");btn.textContent="✨ Reading…";
+    document.getElementById("extractStatus").textContent="contacting "+s.provider+"…";
+    AI.extractDocument({imageDataUrl:state.cdd.docImage,docType:val("c_idtype"),provider:s.provider,apiKey:s.key,model:s.model,baseUrl:s.baseUrl})
+      .then(function(res){btn.classList.remove("spin");btn.textContent="✨ Extract with AI";
+        if(res.ok&&res.fields){var f=res.fields;
+          if(f.fullName)set("c_name",f.fullName);if(f.idNumber)set("c_idnum",f.idNumber);if(f.nationality)set("c_nationality",f.nationality);
+          if(f.dob)set("c_dob",f.dob);if(f.address)set("c_address",f.address);
+          document.getElementById("extractStatus").textContent="fields filled — please verify";toast("Extracted — verify the fields");
+        }else{document.getElementById("extractStatus").textContent=res.error||"extraction failed";toast("Extract failed: "+(res.error||""));}});
+  }
+
+  function cddLoadSample(){
+    setCKind("entity");set("c_name","Gulf Trading LLC");set("c_nationality","UAE");set("c_activity","Property purchase");
+    state.cdd.owners=[
+      {name:"Sara Ali",kind:"person",percent:"40",nationality:"AE",idNumber:"784-1988-1234567-1",owners:[]},
+      {name:"Marina Holdings",kind:"entity",percent:"60",owners:[
+        {name:"Ahmed Ben Salah",kind:"person",percent:"60",nationality:"TN",idNumber:"P2223334",owners:[]},
+        {name:"Lena Cruz",kind:"person",percent:"40",nationality:"PH",idNumber:"P9988776",owners:[]}
+      ]}
+    ];
+    renderOwners();traceUBOui();
+    ["complexOwnership","nonResident"].forEach(function(k){var c=document.querySelector('.rfactor[value="'+k+'"]');if(c)c.checked=true;});
+    assessRisk();toast("Sample ownership loaded — Ahmed = 36%, Sara = 40%");
+  }
+
+  // ================= AI SETTINGS =================
+  function getAI(){try{var s=JSON.parse(localStorage.getItem("amana_ai")||"{}");return {provider:s.provider||"local",key:s.key||"",model:s.model||"",baseUrl:s.baseUrl||"",redact:s.redact!==false};}catch(e){return {provider:"local",key:"",model:"",baseUrl:"",redact:true};}}
+  function loadAI(){var s=getAI();set("ai_provider",s.provider);set("ai_key",s.key);set("ai_model",s.model);set("ai_baseurl",s.baseUrl);document.getElementById("ai_redact").checked=s.redact;}
+  function saveAI(){var s={provider:val("ai_provider"),key:val("ai_key"),model:val("ai_model"),baseUrl:val("ai_baseurl"),redact:document.getElementById("ai_redact").checked};
+    try{localStorage.setItem("amana_ai",JSON.stringify(s));toast(s.provider==="local"?"Saved — running in local-only mode":"AI settings saved on this device");}catch(e){toast("Could not save");}}
+  function testAIkeyNote(){toast("Public LLM APIs may block browser calls (CORS). Anthropic uses a browser-access header; else use a local proxy or Amana's future backend.");}
+
+  // init
+  loadProfile();switchTab("STR");setKind("person");setCKind("entity");renderOwners();loadAI();switchView("filing");
+</script>
+</body>
+</html>

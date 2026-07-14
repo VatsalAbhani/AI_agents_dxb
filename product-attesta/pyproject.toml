@@ -1,0 +1,22 @@
+[project]
+name = "attesta"
+version = "0.1.0"
+description = "The flight recorder for AI agents — verifiable, tamper-evident action ledger + deterministic replay."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+keywords = ["ai-agents", "observability", "audit", "tamper-evident", "replay", "compliance", "mcp"]
+dependencies = []   # v0 is stdlib-only by design
+
+[project.scripts]
+attesta = "attesta.cli:main"
+
+[project.urls]
+Homepage = "https://example.com/attesta"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["attesta"]

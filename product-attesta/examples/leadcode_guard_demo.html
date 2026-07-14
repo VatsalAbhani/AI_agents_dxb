@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leadcode Guard — live demo (powered by Attesta)</title>
+<style>
+  body{margin:0;background:#eef2f6;padding:28px 16px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1b2530}
+  button{transition:filter .15s}button:hover{filter:brightness(.95)}
+  .note{max-width:820px;margin:16px auto 0;font-size:12px;color:#5b6670;text-align:center}
+</style>
+</head>
+<body>
+<div id="lg-demo" style="max-width:820px;margin:0 auto">
+  <div style="background:#0d2137;color:#fff;border-radius:12px 12px 0 0;padding:16px 20px">
+    <div style="font-weight:800;font-size:19px">Leadcode Guard <span style="color:#9fb9c9;font-weight:600;font-size:13px">· live demo</span></div>
+    <div style="font-size:13px;color:#9fb9c9;margin-top:3px">AI drafts → policy checks → human approves → every action recorded in Attesta's tamper-evident ledger</div>
+  </div>
+  <div style="border:1px solid #e2e8ee;border-top:none;border-radius:0 0 12px 12px;background:#fff;padding:16px 18px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button onclick="lgClean()"  style="padding:10px 16px;border:none;border-radius:8px;background:#0E8C7F;color:#fff;font-weight:700;font-size:14px;cursor:pointer">▶ Run a clean lead</button>
+      <button onclick="lgRisky()"  style="padding:10px 16px;border:none;border-radius:8px;background:#2B4C9B;color:#fff;font-weight:700;font-size:14px;cursor:pointer">▶ Run a risky lead</button>
+      <button onclick="lgTamper()" style="padding:10px 16px;border:1px solid #e0b4ab;border-radius:8px;background:#fbece9;color:#b4432c;font-weight:700;font-size:14px;cursor:pointer">🔓 Tamper with the log</button>
+      <button onclick="lgReset()"  style="padding:10px 16px;border:1px solid #e2e8ee;border-radius:8px;background:#fff;color:#0d2137;font-weight:600;font-size:14px;cursor:pointer">↺ Reset</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:#5b6670;text-transform:uppercase;margin-bottom:8px">The workflow</div>
+        <div id="lg-wf" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div>
+        <div id="lg-badge" style="margin-bottom:10px"></div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.6px;color:#5b6670;text-transform:uppercase;margin-bottom:8px">Attesta ledger (tamper-evident)</div>
+        <div id="lg-ledger" style="display:flex;flex-direction:column;gap:5px"></div>
+        <div id="lg-summary" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="note">A faithful browser demo of the real Attesta logic (hash-chained ledger + policy engine + approval gateway). The Python package is the real thing; this is for showing a prospect.</div>
+<script>
+(function(){
+  var GEN="00000000";
+  function h(s){var x=0x811c9dc5;for(var i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,0x01000193);}return (x>>>0).toString(16).padStart(8,"0");}
+  var ledger=[],steps=[],sent=0,blocked=0,approvals=0,brokenAt=-1;
+  function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  function append(t,n,c){var seq=ledger.length,prev=seq?ledger[seq-1].hash:GEN;ledger.push({seq:seq,type:t,name:n,content:c,prev:prev,hash:h(seq+"|"+t+"|"+n+"|"+c+"|"+prev)});}
+  function verify(){brokenAt=-1;var prev=GEN;for(var i=0;i<ledger.length;i++){var e=ledger[i];var rec=h(e.seq+"|"+e.type+"|"+e.name+"|"+e.content+"|"+e.prev);if(rec!==e.hash||e.prev!==prev){brokenAt=e.seq;return false;}prev=e.hash;}return true;}
+  var POL=[{k:"block",re:/guarantee|guaranteed|\d+\s*%\s*(roi|return|apprec)|100%\s*safe/i,r:"No guaranteed returns / false claims"},
+           {k:"appr",re:/discount|\d+%\s*off/i,r:"Discount needs approval"},
+           {k:"appr",re:/.+/,r:"Human approval required before sending"}];
+  function policy(t){var b=POL.filter(function(p){return p.k==="block"&&p.re.test(t);});if(b.length)return{d:"block",r:b.map(function(x){return x.r;})};var a=POL.filter(function(p){return p.k==="appr"&&p.re.test(t);});if(a.length)return{d:"appr",r:a.map(function(x){return x.r;})};return{d:"allow",r:[]};}
+  function step(icon,title,body,tone){steps.push({icon:icon,title:title,body:body,tone:tone||""});}
+  function reset(){ledger=[];steps=[];sent=blocked=approvals=0;brokenAt=-1;}
+
+  window.lgClean=function(){reset();
+    var lead="2BR Downtown Dubai · budget AED 2.5M";append("lead","received",lead);step("📩","Lead received",lead,"");
+    var d="Thanks for your enquiry about a 2-bed in Downtown Dubai around AED 2.5M — would you prefer ready or off-plan?";
+    append("llm","draft",d);step("🤖","AI drafted a reply",d,"");
+    var v=policy(d);append("policy","check",v.d);step("🛡️","Policy check","Needs human approval before sending","warn");
+    approvals++;append("approval","approve","Manager · ABC Real Estate");step("🧑","Manager approved","Approved as written","ok");
+    append("tool","whatsapp_send",d);append("gateway","sent",d);sent++;step("✅","Sent on WhatsApp","Delivered to the customer","ok");
+    render();};
+
+  window.lgRisky=function(){reset();
+    var lead="Investor asks: will this unit make money?";append("lead","received",lead);step("📩","Lead received",lead,"");
+    var bad="Great choice! This unit is guaranteed to appreciate 20% — a 100% safe investment.";
+    append("llm","draft",bad);step("🤖","AI drafted a reply",bad,"");
+    var v=policy(bad);append("policy","check","block");blocked++;append("gateway","blocked",v.r.join(", "));
+    step("🛡️","Policy check — BLOCKED",v.r.join(" · "),"danger");
+    var fixed="Some Downtown units have seen strong demand historically, though future performance can't be promised. Want recent comparables?";
+    append("llm","draft",fixed);step("🧑","Manager rewrote a compliant version",fixed,"ok");
+    append("policy","check","appr");approvals++;append("approval","approve","Manager · ABC Real Estate");
+    append("tool","whatsapp_send",fixed);append("gateway","sent",fixed);sent++;step("✅","Sent on WhatsApp","Compliant message delivered","ok");
+    render();};
+
+  window.lgTamper=function(){if(!ledger.length){return;}for(var i=0;i<ledger.length;i++){if(ledger[i].type==="gateway"&&ledger[i].name==="sent"){ledger[i].content="FORGED: 50% discount, guaranteed!";break;}}render();};
+  window.lgReset=function(){reset();render();};
+
+  function render(){
+    var intact=verify();
+    var toneMap={ok:["#e9f6ee","#1e7a4b","#bfe6cf"],warn:["#fbf3dc","#8a6d1a","#ecdca6"],danger:["#fbece9","#b4432c","#f0cabf"],"":["#f7fafc","#1b2530","#e2e8ee"]};
+    document.getElementById("lg-wf").innerHTML = steps.length?steps.map(function(s){var c=toneMap[s.tone];
+      return '<div style="background:'+c[0]+';border:1px solid '+c[2]+';border-radius:9px;padding:10px 12px"><div style="font-weight:700;font-size:14px;color:'+c[1]+'">'+s.icon+' '+esc(s.title)+'</div><div style="font-size:12.5px;color:#41505c;margin-top:2px">'+esc(s.body)+'</div></div>';}).join(""):'<div style="font-size:13px;color:#8a95a1">Click a scenario above ↑</div>';
+    var b=document.getElementById("lg-badge");
+    if(!ledger.length){b.innerHTML="";}
+    else if(intact){b.innerHTML='<div style="background:#e9f6ee;border:1px solid #bfe6cf;color:#14532d;border-radius:9px;padding:10px 13px;font-weight:800;font-size:14px">✓ LEDGER INTACT — every action is authentic &amp; unaltered</div>';}
+    else{b.innerHTML='<div style="background:#fbece9;border:1px solid #f0cabf;color:#7d2d1c;border-radius:9px;padding:10px 13px;font-weight:800;font-size:14px">✗ TAMPER DETECTED — the log was edited at entry #'+brokenAt+'</div>';}
+    document.getElementById("lg-ledger").innerHTML = ledger.length?ledger.map(function(e){
+      var broke=(brokenAt!==-1&&e.seq>=brokenAt);var bg=broke?"#fbece9":"#f7fafc",bd=broke?"#f0cabf":"#eaf0f4";
+      return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:7px;padding:7px 10px;font-size:12px;display:flex;justify-content:space-between;gap:8px"><span><b style="color:#0d2137">#'+e.seq+' '+esc(e.type)+':'+esc(e.name)+'</b> <span style="color:#5b6670">'+esc(e.content.slice(0,36))+(e.content.length>36?"…":"")+'</span></span><span style="font-family:ui-monospace,Menlo,monospace;color:'+(broke?"#b4432c":"#8a95a1")+'">'+e.hash.slice(0,6)+(broke&&e.seq===brokenAt?" ✗":"")+'</span></div>';
+    }).join(""):'<div style="font-size:13px;color:#8a95a1">The tamper-evident ledger will appear here.</div>';
+    document.getElementById("lg-summary").innerHTML = ledger.length?'<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="background:#e9f6ee;color:#14532d;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:700">Sent: '+sent+'</span><span style="background:#fbece9;color:#7d2d1c;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:700">Blocked: '+blocked+'</span><span style="background:#eef2f8;color:#2B4C9B;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:700">Approvals: '+approvals+'</span></div>':"";
+  }
+  window.lgClean();
+})();
+</script>
+</body>
+</html>
