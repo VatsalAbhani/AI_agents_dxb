@@ -47,7 +47,16 @@ def build_policies(config: ClientConfig):
 def realestate_config(company="ABC Real Estate"):
     return ClientConfig(
         company=company, vertical="real_estate",
-        knowledge={"areas": ["Downtown Dubai", "Dubai Marina", "JVC", "Business Bay", "Palm Jumeirah"]},
+        knowledge={
+            "areas": ["Downtown Dubai", "Dubai Marina", "JVC", "Business Bay", "Palm Jumeirah"],
+            # the units the agent may recommend — it only ever grounds replies in this list
+            "inventory": [
+                {"name": "Marina Vista", "area": "Dubai Marina", "bedrooms": 2, "price": 2_300_000, "type": "ready"},
+                {"name": "Downtown Ace", "area": "Downtown Dubai", "bedrooms": 2, "price": 2_700_000, "type": "ready"},
+                {"name": "Creek Palace", "area": "Dubai Creek Harbour", "bedrooms": 1, "price": 1_450_000, "type": "off-plan"},
+                {"name": "JVC Gardens", "area": "Jumeirah Village Circle", "bedrooms": 1, "price": 850_000, "type": "ready"},
+            ],
+        },
     )
 
 

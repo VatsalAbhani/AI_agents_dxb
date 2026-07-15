@@ -64,7 +64,7 @@ class ConversationalAgent:
         convo.tier = sc["tier"]
         inventory = self.config.knowledge.get("inventory", [])
         matches = match_inventory(convo.slots, inventory)
-        action = next_action(convo.slots, sc, bool(inventory))
+        action = next_action(convo.slots, sc, bool(matches))
         if action["type"] == "escalate":
             convo.escalated = True
         self.rec.event("qualify", "update", {
@@ -84,8 +84,11 @@ class ConversationalAgent:
             fixed = self.rec.llm("redraft", lambda _o: fixed, draft)
             res = self.gate.send(ch, fixed, self.sender, context={"lead": convo.lead})
 
-        final = res.get("final") or draft
-        convo.history.append({"role": "agent", "text": final})
+        # only what was actually sent enters the conversation history — a blocked
+        # draft must not pollute later turns' context or masquerade as a reply
+        final = res.get("final")
+        if final:
+            convo.history.append({"role": "agent", "text": final})
         return {"reply": final, "status": res["status"], "blocked": was_blocked, "tier": convo.tier,
                 "action": action, "escalated": convo.escalated, "slots": dict(convo.slots)}
 

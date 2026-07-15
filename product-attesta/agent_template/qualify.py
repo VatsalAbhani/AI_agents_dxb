@@ -44,7 +44,7 @@ def extract_slots(text, slots=None):
         if a.lower() in t:
             s["area"] = _AREA_ALIASES.get(a.lower(), a)
             break
-    if re.search(r"\b(invest|yield|rental|roi|returns?)\b", t):
+    if re.search(r"\b(invest\w*|yield|rental|roi|returns?)\b", t):
         s["purpose"] = "invest"
     elif re.search(r"\b(live|move in|family|home to live|end user)\b", t):
         s["purpose"] = "live"
@@ -84,7 +84,9 @@ def score(slots):
 
 
 def match_inventory(slots, inventory):
-    """Return real units that fit the slots (agent only ever recommends from here)."""
+    """Return real units that fit the slots (agent only ever recommends from here).
+    No fallback padding: if nothing genuinely fits, return nothing — the agent
+    must never present a non-matching unit as a match."""
     fits = []
     for u in inventory or []:
         if slots.get("area") and u.get("area") and slots["area"] != u["area"]:
@@ -94,20 +96,22 @@ def match_inventory(slots, inventory):
         if "bedrooms" in slots and u.get("bedrooms") is not None and u["bedrooms"] != slots["bedrooms"]:
             continue
         fits.append(u)
-    return fits[:3] if fits else (inventory or [])[:2]
+    return fits[:3]
 
 
 HIGH_VALUE = 2_000_000
 
 
-def next_action(slots, sc, has_inventory):
+def next_action(slots, sc, has_matches):
     """ask a question, share options, or escalate to a human."""
     if sc["tier"] == "Hot" and (slots.get("budget") or 0) >= HIGH_VALUE:
         return {"type": "escalate", "reason": "Hot lead, high budget — hand to a senior agent"}
     known = sum(1 for k in ("budget", "area", "purpose") if k in slots)
-    if known >= 2 and has_inventory:
+    if known >= 2 and has_matches:
         return {"type": "share_options"}
     for k in ("budget", "area", "timeline", "purpose"):
         if k not in slots:
             return {"type": "ask", "slot": k}
+    if not has_matches:
+        return {"type": "escalate", "reason": "Qualified lead but nothing in inventory fits — human follow-up"}
     return {"type": "share_options"}

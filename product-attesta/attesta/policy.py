@@ -24,8 +24,15 @@ class Policy:
 def default_policies():
     """A starter set — extend per client. Order doesn't matter; block wins."""
     return [
+        # match PROMISES of guarantees, not disclaimers ("no guarantees",
+        # "we can't guarantee") — a compliant rewrite must be able to pass
         Policy("no-guaranteed-returns", "block",
-               [r"guarantee", r"\bguaranteed\b", r"\d+\s*%\s*(roi|return|apprec|growth)"],
+               [r"\b(?:we|i)\s+(?:can\s+|do\s+|will\s+)?guarantee\b",
+                r"\bguaranteed\s+(?:returns?|rental|roi|yield|income|profits?|appreciation)\b",
+                r"\bguaranteed\s+to\s+\w+",
+                r"\bguaranteed\s+\d",
+                r"\d+\s*%\s*(roi|return|apprec|growth)",
+                r"\brisk[- ]?free\b"],
                "No guaranteed investment returns"),
         Policy("no-medical-claims", "block",
                [r"\bcure\b", r"guaranteed results", r"no side ?effects", r"100%\s*safe"],

@@ -146,3 +146,90 @@ def drafter_mode():
     if provider in ("openai", "anthropic", "openai-compatible") and key:
         return f"REAL LLM · {provider} · {os.getenv('LLM_MODEL') or 'default model'}"
     return "offline template (set LLM_PROVIDER + OPENAI_API_KEY to use a real LLM)"
+
+
+# ---- multi-turn conversation (used by agent_template.conversation) ---
+def template_converse(ctx, config):
+    """Deterministic multi-turn drafter. Acts on the qualify decision: ask the
+    next missing question, share matched inventory (never invents listings), or
+    hand the lead to a human. Offline, compliant by construction."""
+    name = (ctx.get("lead") or {}).get("name", "there")
+    action = ctx.get("action") or {"type": "ask", "slot": "budget"}
+    matches = ctx.get("matches") or []
+    first = not any(h.get("role") == "agent" for h in ctx.get("history") or [])
+    greet = f"Hi {name} — " if first else ""
+
+    if action["type"] == "escalate":
+        return (greet + f"you clearly know what you're looking for, so I'm connecting you with our senior "
+                f"consultant at {config.company}, who handles these personally. They'll reach out shortly — "
+                "is there anything specific you'd like them to prepare?")
+
+    if action["type"] == "share_options" and matches:
+        lines = [f"• {u.get('name')} — {u.get('bedrooms')}BR in {u.get('area')}, AED {u.get('price', 0):,.0f}"
+                 + (f" ({u['type']})" if u.get("type") else "")
+                 for u in matches[:3]]
+        return (greet + "based on what you've shared, these current listings fit:\n" + "\n".join(lines)
+                + "\nWould you like more detail or a viewing on any of these?")
+
+    questions = {
+        "budget": "what budget range are you considering?",
+        "area": "which area of Dubai do you prefer?",
+        "timeline": "when are you hoping to move ahead — the next few months, or later?",
+        "purpose": "is this to live in yourself, or as an investment?",
+    }
+    q = questions.get(action.get("slot"), "could you tell me a little more about what you're looking for?")
+    return greet + "happy to help — " + q
+
+
+def build_converse_system_prompt(config):
+    """Same guardrails as the single-shot prompt, plus multi-turn grounding rules."""
+    return (build_system_prompt(config)
+            + "\nYou are mid-conversation. You receive the chat history, what is known about the lead "
+              "(slots), matching listings from OUR inventory, and a suggested next step (action). "
+              "Only ever mention listings from the provided matches — never invent properties, prices, or "
+              "availability. Follow the suggested action: 'ask' = ask that one question, 'share_options' = "
+              "present the matches, 'escalate' = warmly hand over to a human colleague. Reply with the "
+              "message text only.")
+
+
+def make_llm_converser(provider="openai", api_key=None, model=None, base_url=None,
+                       fallback=None, timeout=30):
+    """Multi-turn counterpart of make_llm_drafter: same plumbing and fallback
+    behaviour, but briefed with the conversation state. provider='mock' runs
+    offline through the LLM code path."""
+    import urllib.request
+    fb = fallback or template_converse
+
+    def converser(ctx, config):
+        global LAST_LLM_ERROR
+        if provider == "mock":
+            return template_converse(ctx, config)
+        state = {"lead": ctx.get("lead"), "slots": ctx.get("slots"),
+                 "history": (ctx.get("history") or [])[-8:],
+                 "matches": ctx.get("matches"), "action": ctx.get("action")}
+        req = build_request(provider, build_converse_system_prompt(config),
+                            "Conversation state: " + json.dumps(state, default=str),
+                            api_key, model, base_url)
+        try:
+            r = urllib.request.Request(req["url"], data=json.dumps(req["body"]).encode(),
+                                       headers=req["headers"], method="POST")
+            with urllib.request.urlopen(r, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode())
+            return parse_response(provider, data) or fb(ctx, config)
+        except Exception as ex:
+            LAST_LLM_ERROR = repr(ex)
+            return fb(ctx, config)
+
+    return converser
+
+
+def resolve_converser(config):
+    provider = (os.getenv("LLM_PROVIDER") or "").lower()
+    if provider == "mock":
+        return make_llm_converser(provider="mock")
+    key = os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    if provider in ("openai", "anthropic", "openai-compatible") and key:
+        prov = "anthropic" if provider == "anthropic" else "openai"
+        return make_llm_converser(prov, api_key=key, model=os.getenv("LLM_MODEL"),
+                                  base_url=os.getenv("LLM_BASE_URL"))
+    return template_converse
