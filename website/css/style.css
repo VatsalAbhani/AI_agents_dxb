@@ -403,8 +403,22 @@ em { font-style: italic; }
 .pilot__price-amount { font-size: clamp(2.6rem, 6vw, 4.2rem); line-height: 1.05; margin-top: 0.3rem; }
 .pilot__price-fine { color: rgba(14, 15, 12, 0.68); font-size: 0.95rem; margin-top: 0.6rem; max-width: 34rem; }
 
+/* the 14-day checklist inside the offer box */
+.pilot__days {
+  list-style: none; flex-basis: 100%;
+  border-top: 1px solid var(--hair-ink); padding-top: 1.6rem; margin-top: 0.6rem;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem 2rem;
+  font-size: 0.68rem; letter-spacing: 0.12em; color: rgba(14, 15, 12, 0.72);
+}
+.pilot__days li::before { content: "✓ "; color: var(--orange); }
+
+.pilot__who {
+  margin-top: 5rem; font-size: clamp(1.4rem, 2.8vw, 2rem); line-height: 1.3;
+  max-width: 30ch; color: var(--ink);
+}
+
 .verticals {
-  list-style: none; margin-top: 4rem;
+  list-style: none; margin-top: 2.5rem;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;
 }
 .verticals li {
@@ -461,12 +475,15 @@ em { font-style: italic; }
 .footer .mono { font-size: 0.75rem; letter-spacing: 0.18em; color: var(--paper); display: inline-flex; align-items: center; gap: 0.6rem; }
 .footer__box { width: 0.7rem; height: 0.7rem; background: var(--orange); display: inline-block; }
 .footer strong { color: var(--paper); }
+.footer__mail { color: var(--paper-dim); text-decoration: none; border-bottom: 1px solid var(--hair-strong); }
+.footer__mail:hover { color: var(--orange); border-color: var(--orange); }
 .footer__ar { font-size: 1rem; color: var(--olive); }
 .footer__copy { color: var(--olive) !important; }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 960px) {
   .theatre__stage { grid-template-columns: 1fr; }
+  .pilot__days { grid-template-columns: 1fr 1fr; }
   .phone, .ledger-panel { min-height: 480px; }
   .problem__grid { grid-template-columns: 1fr; }
   .pilot__grid { grid-template-columns: 1fr; }
@@ -477,6 +494,7 @@ em { font-style: italic; }
 }
 @media (max-width: 620px) {
   .nav__links { display: none; }
+  .pilot__days { grid-template-columns: 1fr; }
   .tamper__chain { grid-template-columns: 1fr; }
   .verticals { grid-template-columns: 1fr; }
   .pilot__offer { padding: 1.8rem 1.4rem; }
