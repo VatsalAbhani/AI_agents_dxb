@@ -22,6 +22,15 @@ from .drafter import template_converse
 from .qualify import extract_slots, match_inventory, next_action, score
 
 
+def _advisor_sender(channel):
+    """Sender for relationship leads: the approved text is handed to the assigned
+    human advisor to send personally — the bot never delivers it."""
+    def send(text):
+        return {"status": "routed_to_advisor", "channel": channel,
+                "note": "relationship lead — approved text handed to the assigned advisor to send personally"}
+    return send
+
+
 @dataclass
 class Conversation:
     lead: dict
@@ -65,24 +74,42 @@ class ConversationalAgent:
         inventory = self.config.knowledge.get("inventory", [])
         matches = match_inventory(convo.slots, inventory)
         action = next_action(convo.slots, sc, bool(matches))
-        if action["type"] == "escalate":
+        high_intent = action["type"] == "escalate"
+        first_escalation = high_intent and not convo.escalated
+        if high_intent:
             convo.escalated = True
         self.rec.event("qualify", "update", {
             "tier": sc["tier"], "score": sc["score"], "slots": convo.slots,
             "action": action["type"], "matches": [u.get("name") for u in matches],
         })
+        # the handoff clock starts here: from this entry's timestamp to the human
+        # decision is the "high-intent signal -> human takeover" pilot metric
+        if first_escalation:
+            self.rec.event("handoff", "requested", {
+                "reason": action.get("reason", "high-intent lead"),
+                "tier": sc["tier"], "slots": convo.slots,
+            })
+
+        # relationship sensitivity: returning/referral/personal leads are DRAFT-ONLY —
+        # the approved text is routed to the assigned human advisor, never bot-sent
+        relationship = (convo.lead.get("relationship") or "new").lower()
+        draft_only = relationship in self.config.draft_only_relationships
+        sender = _advisor_sender(ch) if draft_only else self.sender
+        send_ctx = {"lead": convo.lead, "relationship": relationship,
+                    "intent": {"tier": sc["tier"], "action": action["type"],
+                               "high_intent": high_intent}}
 
         # 3) draft the next message (grounded), then run it through the gateway
         ctx = {"lead": convo.lead, "slots": convo.slots, "history": convo.history,
                "matches": matches, "action": action, "score": sc}
         draft = self.rec.llm("draft", lambda c: drafter(c, self.config), ctx)
-        res = self.gate.send(ch, draft, self.sender, context={"lead": convo.lead})
+        res = self.gate.send(ch, draft, sender, context=send_ctx)
         was_blocked = res["status"] == "blocked"
         if was_blocked and self.remediator:
             self.rec.event("remediation", "requested", {"reasons": res["reasons"]})
             fixed = self.remediator(draft, res["reasons"], self.config)
             fixed = self.rec.llm("redraft", lambda _o: fixed, draft)
-            res = self.gate.send(ch, fixed, self.sender, context={"lead": convo.lead})
+            res = self.gate.send(ch, fixed, sender, context=send_ctx)
 
         # only what was actually sent enters the conversation history — a blocked
         # draft must not pollute later turns' context or masquerade as a reply

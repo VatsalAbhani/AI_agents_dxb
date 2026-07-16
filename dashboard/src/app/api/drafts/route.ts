@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     lead_meta: body.lead ?? undefined,
     draft: body.draft,
     policy: Array.isArray(body.policy) ? body.policy : undefined,
+    intent: body.intent ?? undefined,
+    relationship: typeof body.relationship === "string" ? body.relationship : undefined,
   });
   return NextResponse.json({ id: row.id, status: row.status }, { status: 201 });
 }

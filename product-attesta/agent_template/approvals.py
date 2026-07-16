@@ -41,12 +41,15 @@ def remote_approver(base_url, api_key="demo-key", client="demo", channel="whatsa
     base = base_url.rstrip("/")
 
     def approver(draft, context):
+        ctx = context or {}
         try:
             created = _request("POST", base + "/api/drafts", api_key, {
                 "draft": draft,
                 "client": client,
                 "channel": channel,
-                "lead": (context or {}).get("lead") or {},
+                "lead": ctx.get("lead") or {},
+                "intent": ctx.get("intent"),
+                "relationship": ctx.get("relationship"),
             })
             draft_id = created["id"]
         except (urllib.error.URLError, OSError, KeyError, ValueError) as ex:
@@ -62,11 +65,17 @@ def remote_approver(base_url, api_key="demo-key", client="demo", channel="whatsa
                 time.sleep(poll_every)
                 continue
             if r.get("status") == "approved":
-                return {"decision": "approve",
-                        "final": r.get("final") or draft,
-                        "by": r.get("by") or "Manager"}
+                verdict = {"decision": "approve",
+                           "final": r.get("final") or draft,
+                           "by": r.get("by") or "Manager"}
+                if r.get("reason"):
+                    verdict["reason"] = r["reason"]
+                return verdict
             if r.get("status") == "rejected":
-                return {"decision": "reject", "by": r.get("by") or "Manager"}
+                verdict = {"decision": "reject", "by": r.get("by") or "Manager"}
+                if r.get("reason"):
+                    verdict["reason"] = r["reason"]
+                return verdict
             time.sleep(poll_every)
 
         return {"decision": "reject", "by": "approval-timeout — fail closed"}

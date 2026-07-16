@@ -21,6 +21,9 @@ class ClientConfig:
     blocked_actions: list = field(default_factory=lambda: ["payment links", "discounts", "ROI guarantees"])
     knowledge: dict = field(default_factory=dict)     # vertical facts (areas, services, hours…)
     extra_policies: list = field(default_factory=list)  # client-specific Policy objects
+    # relationship sensitivity: these lead types are DRAFT-ONLY — the bot never
+    # sends to them; approved text goes to the assigned human advisor
+    draft_only_relationships: list = field(default_factory=lambda: ["returning", "referral", "personal"])
 
 
 # vertical-specific guardrails layered on top of the default policy pack

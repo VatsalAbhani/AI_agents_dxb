@@ -54,9 +54,13 @@ BASE = f"http://127.0.0.1:{server.server_address[1]}"
 
 print("\n== submits the draft with lead context ==")
 approver = remote_approver(BASE, timeout=5, poll_every=0.05, quiet=True)
-verdict = approver("Hello Rahul", {"lead": {"name": "Rahul"}})
+verdict = approver("Hello Rahul", {"lead": {"name": "Rahul"},
+                                   "intent": {"tier": "Hot", "high_intent": True},
+                                   "relationship": "new"})
 ok("draft submitted", StubDashboard.submissions[0]["draft"] == "Hello Rahul")
 ok("lead context included", StubDashboard.submissions[0]["lead"]["name"] == "Rahul")
+ok("intent forwarded", StubDashboard.submissions[0]["intent"]["high_intent"] is True)
+ok("relationship forwarded", StubDashboard.submissions[0]["relationship"] == "new")
 
 print("\n== approval maps to gateway contract ==")
 ok("decision approve", verdict["decision"] == "approve")
@@ -68,10 +72,11 @@ StubDashboard.decision = {"status": "approved", "final": "Hello Rahul — edited
 verdict = approver("Hello Rahul", {})
 ok("edited final wins", verdict["final"] == "Hello Rahul — edited")
 
-print("\n== rejection maps to reject ==")
-StubDashboard.decision = {"status": "rejected", "final": None, "by": "Mgr"}
+print("\n== rejection maps to reject, reason passes through ==")
+StubDashboard.decision = {"status": "rejected", "final": None, "by": "Mgr", "reason": "wrong unit quoted"}
 verdict = approver("Bad draft", {})
 ok("decision reject", verdict["decision"] == "reject")
+ok("reason passes through", verdict.get("reason") == "wrong unit quoted")
 
 print("\n== fail-closed behaviour ==")
 StubDashboard.decision = {"status": "pending"}

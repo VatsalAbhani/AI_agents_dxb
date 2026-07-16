@@ -14,5 +14,6 @@ export async function GET(
     status: row.status,
     final: row.final_text,
     by: row.decided_by,
+    reason: row.reason,
   });
 }

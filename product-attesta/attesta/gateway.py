@@ -38,11 +38,14 @@ class Gateway:
             if self.approver is None:
                 self.rec.event("gateway", "held_for_approval", {"channel": channel, "draft": draft})
                 return {"status": "held_for_approval", "final": None}
-            verdict = self.approver(draft, context)   # {"decision","final","by"}
-            self.rec.event("approval", verdict.get("decision", "approve"), {
+            verdict = self.approver(draft, context)   # {"decision","final","by"[,"reason"]}
+            payload = {
                 "channel": channel, "by": verdict.get("by"),
                 "final": verdict.get("final", draft), "edited": verdict.get("final", draft) != draft,
-            })
+            }
+            if verdict.get("reason"):
+                payload["reason"] = verdict["reason"]   # why the human edited/rejected
+            self.rec.event("approval", verdict.get("decision", "approve"), payload)
             if verdict.get("decision") == "reject":
                 return {"status": "rejected", "by": verdict.get("by"), "final": None}
             final = verdict.get("final", draft)

@@ -6,11 +6,13 @@ export async function POST() {
   const samples = [
     {
       lead_name: "Rahul M.",
-      lead_meta: { source: "Meta Ads", enquiry: "2BR in Dubai Marina, ~2.4M" },
+      lead_meta: { source: "Meta Ads", enquiry: "2BR in Dubai Marina, ~2.4M, cash, this month" },
       channel: "whatsapp",
       draft:
-        "Marina Vista fits — 2BR in Dubai Marina, AED 2.3M, ready. Shall I set up a viewing this week?",
+        "You clearly know what you're looking for — connecting you with our senior consultant, who handles these personally. Anything you'd like them to prepare?",
       policy: ["HUMAN APPROVAL REQUIRED"],
+      intent: { tier: "Hot", action: "escalate", high_intent: true },
+      relationship: "new",
     },
     {
       lead_name: "Sara K.",
@@ -19,14 +21,18 @@ export async function POST() {
       draft:
         "Hi Sara — happy to help. We have consultation slots tomorrow between 2–6pm. Would you like me to hold one for you?",
       policy: ["HUMAN APPROVAL REQUIRED"],
+      intent: { tier: "Warm", action: "ask", high_intent: false },
+      relationship: "new",
     },
     {
       lead_name: "Omar A.",
-      lead_meta: { source: "WhatsApp", enquiry: "Asking about payment plans" },
+      lead_meta: { source: "WhatsApp", enquiry: "Past buyer — asking about new payment plans" },
       channel: "whatsapp",
       draft:
-        "We can discuss flexible payment plan options for the JVC unit — I can share the developer's official schedule. When suits a quick call?",
-      policy: ["HUMAN APPROVAL REQUIRED", "PAYMENT TERMS MENTIONED"],
+        "Great to hear from you again, Omar. The developer has released a new schedule for JVC — shall I walk you through it over a quick call?",
+      policy: ["HUMAN APPROVAL REQUIRED"],
+      intent: { tier: "Warm", action: "share_options", high_intent: false },
+      relationship: "returning",
     },
   ];
   const rows = samples.map((s) => insertDraft(s));

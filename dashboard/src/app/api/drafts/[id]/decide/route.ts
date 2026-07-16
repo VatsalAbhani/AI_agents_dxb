@@ -23,6 +23,8 @@ export async function POST(
   const finalText =
     typeof body.final === "string" && body.final.trim() ? body.final.trim() : null;
   const by = typeof body.by === "string" && body.by.trim() ? body.by.trim() : "Manager";
-  const row = decideDraft(id, decision, finalText, by);
+  const reason =
+    typeof body.reason === "string" && body.reason.trim() ? body.reason.trim() : null;
+  const row = decideDraft(id, decision, finalText, by, reason);
   return NextResponse.json({ draft: row });
 }

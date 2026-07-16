@@ -16,6 +16,10 @@ export type Draft = {
   decided_by: string | null;
   created_at: number;
   decided_at: number | null;
+  intent: string | null; // JSON: {tier, action, high_intent}
+  relationship: string | null; // new | returning | referral | personal
+  reason: string | null; // why the manager edited/rejected
+  priority: number; // 1 = high-intent (sorted first)
 };
 
 // singleton so Next.js HMR doesn't open a new handle per reload
@@ -44,6 +48,17 @@ export function db(): Database.Database {
       );
       CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status, created_at);
     `);
+    // additive migrations for databases created before these columns existed
+    const cols = (handle.prepare("PRAGMA table_info(drafts)").all() as { name: string }[])
+      .map((c) => c.name);
+    for (const [col, ddl] of [
+      ["intent", "ALTER TABLE drafts ADD COLUMN intent TEXT"],
+      ["relationship", "ALTER TABLE drafts ADD COLUMN relationship TEXT"],
+      ["reason", "ALTER TABLE drafts ADD COLUMN reason TEXT"],
+      ["priority", "ALTER TABLE drafts ADD COLUMN priority INTEGER NOT NULL DEFAULT 0"],
+    ] as const) {
+      if (!cols.includes(col)) handle.exec(ddl);
+    }
     g.__guardDb = handle;
   }
   return g.__guardDb;
@@ -56,7 +71,11 @@ export function insertDraft(input: {
   lead_meta?: unknown;
   draft: string;
   policy?: unknown;
+  intent?: unknown;
+  relationship?: string;
 }): Draft {
+  const intent = input.intent && typeof input.intent === "object" ? input.intent : null;
+  const highIntent = !!(intent as { high_intent?: boolean } | null)?.high_intent;
   const row: Draft = {
     id: crypto.randomUUID(),
     client: input.client ?? "demo",
@@ -70,11 +89,17 @@ export function insertDraft(input: {
     decided_by: null,
     created_at: Date.now(),
     decided_at: null,
+    intent: intent ? JSON.stringify(intent) : null,
+    relationship: input.relationship ?? null,
+    reason: null,
+    priority: highIntent ? 1 : 0,
   };
   db()
     .prepare(
-      `INSERT INTO drafts (id, client, channel, lead_name, lead_meta, draft, policy, status, created_at)
-       VALUES (@id, @client, @channel, @lead_name, @lead_meta, @draft, @policy, @status, @created_at)`
+      `INSERT INTO drafts (id, client, channel, lead_name, lead_meta, draft, policy, status, created_at,
+                           intent, relationship, priority)
+       VALUES (@id, @client, @channel, @lead_name, @lead_meta, @draft, @policy, @status, @created_at,
+               @intent, @relationship, @priority)`
     )
     .run(row);
   return row;
@@ -86,8 +111,9 @@ export function getDraft(id: string): Draft | undefined {
 
 export function listDrafts(status: "pending" | "decided"): Draft[] {
   if (status === "pending") {
+    // high-intent leads jump the queue — the handoff clock is running
     return db()
-      .prepare("SELECT * FROM drafts WHERE status = 'pending' ORDER BY created_at ASC")
+      .prepare("SELECT * FROM drafts WHERE status = 'pending' ORDER BY priority DESC, created_at ASC")
       .all() as Draft[];
   }
   return db()
@@ -101,20 +127,59 @@ export function decideDraft(
   id: string,
   decision: "approve" | "reject",
   finalText: string | null,
-  by: string
+  by: string,
+  reason: string | null = null
 ): Draft | undefined {
   const existing = getDraft(id);
   if (!existing || existing.status !== "pending") return existing;
   db()
     .prepare(
-      `UPDATE drafts SET status = ?, final_text = ?, decided_by = ?, decided_at = ? WHERE id = ?`
+      `UPDATE drafts SET status = ?, final_text = ?, decided_by = ?, decided_at = ?, reason = ? WHERE id = ?`
     )
     .run(
       decision === "approve" ? "approved" : "rejected",
       decision === "approve" ? finalText ?? existing.draft : null,
       by,
       Date.now(),
+      reason,
       id
     );
   return getDraft(id);
+}
+
+function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
+}
+
+// the pilot metrics sheet, computed live from the queue
+export function metrics() {
+  const rows = db().prepare("SELECT * FROM drafts").all() as Draft[];
+  const decided = rows.filter((d) => d.status !== "pending" && d.decided_at);
+  const approved = decided.filter((d) => d.status === "approved");
+  const unchanged = approved.filter((d) => d.final_text === d.draft);
+  const edited = approved.filter((d) => d.final_text !== d.draft);
+  const rejected = decided.filter((d) => d.status === "rejected");
+  const decisionTimes = decided.map((d) => (d.decided_at as number) - d.created_at);
+  const handoffTimes = decided
+    .filter((d) => d.priority === 1)
+    .map((d) => (d.decided_at as number) - d.created_at);
+  return {
+    pending: rows.length - decided.length,
+    decided: decided.length,
+    approved_unchanged: unchanged.length,
+    approved_edited: edited.length,
+    rejected: rejected.length,
+    pct_approved_unchanged: decided.length
+      ? Math.round((unchanged.length / decided.length) * 100)
+      : null,
+    pct_edited: decided.length ? Math.round((edited.length / decided.length) * 100) : null,
+    pct_rejected: decided.length ? Math.round((rejected.length / decided.length) * 100) : null,
+    median_decision_ms: median(decisionTimes),
+    median_handoff_ms: median(handoffTimes),
+    high_intent_total: rows.filter((d) => d.priority === 1).length,
+    high_intent_decided: handoffTimes.length,
+  };
 }
