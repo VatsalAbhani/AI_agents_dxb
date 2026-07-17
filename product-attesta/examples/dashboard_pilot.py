@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agent_template.approvals import remote_approver                     # noqa: E402
 from agent_template.config import realestate_config                      # noqa: E402
 from agent_template.conversation import ConversationalAgent              # noqa: E402
-from agent_template.drafter import resolve_converser, drafter_mode       # noqa: E402
+from agent_template.drafter import resolve_converser, drafter_mode, make_variants  # noqa: E402
 
 BASE = os.getenv("DASHBOARD_URL", "http://localhost:3005")
 KEY = os.getenv("GUARD_API_KEY", "demo-key")
@@ -33,7 +33,8 @@ def main():
     agent = ConversationalAgent(
         config,
         converser=resolve_converser(config),
-        approver=remote_approver(BASE, api_key=KEY, client=config.company),
+        approver=remote_approver(BASE, api_key=KEY, client=config.company,
+                                 variants=make_variants(config)),
         remediator=lambda d, r, c: ("I can't promise outcomes, but I'd gladly share current "
                                     "listings and comparables so you can decide."),
     )

@@ -23,7 +23,9 @@ def ok(name, cond):
 class StubDashboard(BaseHTTPRequestHandler):
     """Configurable stub: records submissions, serves a scripted decision."""
     decision = {"status": "approved", "final": None, "by": "Stub Mgr"}
+    get_script = []          # optional per-request GET responses (popped in order)
     submissions = []
+    variants_received = []
     require_key = "demo-key"
 
     def _send(self, code, obj):
@@ -38,10 +40,15 @@ class StubDashboard(BaseHTTPRequestHandler):
             return self._send(401, {"error": "bad key"})
         length = int(self.headers.get("content-length", 0))
         payload = json.loads(self.rfile.read(length))
+        if self.path.endswith("/variants"):
+            StubDashboard.variants_received.append(payload)
+            return self._send(200, {"ok": True})
         StubDashboard.submissions.append(payload)
         self._send(201, {"id": "d-1", "status": "pending"})
 
     def do_GET(self):
+        if StubDashboard.get_script:
+            return self._send(200, {"id": "d-1", **StubDashboard.get_script.pop(0)})
         self._send(200, {"id": "d-1", **StubDashboard.decision})
 
     def log_message(self, *a):  # silence
@@ -77,6 +84,21 @@ StubDashboard.decision = {"status": "rejected", "final": None, "by": "Mgr", "rea
 verdict = approver("Bad draft", {})
 ok("decision reject", verdict["decision"] == "reject")
 ok("reason passes through", verdict.get("reason") == "wrong unit quoted")
+
+print("\n== on-demand variants: manager asks, agent generates, choice flows back ==")
+StubDashboard.get_script = [
+    {"status": "pending", "variants_requested": True, "has_variants": False},
+    {"status": "pending", "variants_requested": True, "has_variants": True},
+    {"status": "approved", "final": "Concise alt.", "by": "Mgr", "variant": 0},
+]
+vapprover = remote_approver(BASE, timeout=5, poll_every=0.05, quiet=True,
+                            variants=lambda d, c: ["Concise alt.", "Warmer alt."])
+verdict = vapprover("Original draft text", {})
+ok("variants posted to the dashboard once",
+   len(StubDashboard.variants_received) == 1
+   and StubDashboard.variants_received[0]["variants"] == ["Concise alt.", "Warmer alt."])
+ok("chosen variant text becomes the final", verdict["final"] == "Concise alt.")
+ok("variant index passes through", verdict.get("variant") == 0)
 
 print("\n== fail-closed behaviour ==")
 StubDashboard.decision = {"status": "pending"}

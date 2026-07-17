@@ -20,6 +20,9 @@ export type Draft = {
   relationship: string | null; // new | returning | referral | personal
   reason: string | null; // why the manager edited/rejected
   priority: number; // 1 = high-intent (sorted first)
+  variants: string | null; // JSON: alternative phrasings, generated on demand
+  variants_requested: number; // 1 = manager tapped "Alternatives", agent is generating
+  selected_variant: number | null; // which alternative was sent (null = primary/edited)
 };
 
 // singleton so Next.js HMR doesn't open a new handle per reload
@@ -56,6 +59,9 @@ export function db(): Database.Database {
       ["relationship", "ALTER TABLE drafts ADD COLUMN relationship TEXT"],
       ["reason", "ALTER TABLE drafts ADD COLUMN reason TEXT"],
       ["priority", "ALTER TABLE drafts ADD COLUMN priority INTEGER NOT NULL DEFAULT 0"],
+      ["variants", "ALTER TABLE drafts ADD COLUMN variants TEXT"],
+      ["variants_requested", "ALTER TABLE drafts ADD COLUMN variants_requested INTEGER NOT NULL DEFAULT 0"],
+      ["selected_variant", "ALTER TABLE drafts ADD COLUMN selected_variant INTEGER"],
     ] as const) {
       if (!cols.includes(col)) handle.exec(ddl);
     }
@@ -73,6 +79,7 @@ export function insertDraft(input: {
   policy?: unknown;
   intent?: unknown;
   relationship?: string;
+  variants?: string[];
 }): Draft {
   const intent = input.intent && typeof input.intent === "object" ? input.intent : null;
   const highIntent = !!(intent as { high_intent?: boolean } | null)?.high_intent;
@@ -93,16 +100,35 @@ export function insertDraft(input: {
     relationship: input.relationship ?? null,
     reason: null,
     priority: highIntent ? 1 : 0,
+    variants: input.variants?.length ? JSON.stringify(input.variants) : null,
+    variants_requested: 0,
+    selected_variant: null,
   };
   db()
     .prepare(
       `INSERT INTO drafts (id, client, channel, lead_name, lead_meta, draft, policy, status, created_at,
-                           intent, relationship, priority)
+                           intent, relationship, priority, variants)
        VALUES (@id, @client, @channel, @lead_name, @lead_meta, @draft, @policy, @status, @created_at,
-               @intent, @relationship, @priority)`
+               @intent, @relationship, @priority, @variants)`
     )
     .run(row);
   return row;
+}
+
+export function requestVariants(id: string): Draft | undefined {
+  const existing = getDraft(id);
+  if (!existing || existing.status !== "pending") return existing;
+  db().prepare("UPDATE drafts SET variants_requested = 1 WHERE id = ?").run(id);
+  return getDraft(id);
+}
+
+export function setVariants(id: string, variants: string[]): Draft | undefined {
+  const existing = getDraft(id);
+  if (!existing || existing.status !== "pending") return existing;
+  db()
+    .prepare("UPDATE drafts SET variants = ? WHERE id = ?")
+    .run(JSON.stringify(variants), id);
+  return getDraft(id);
 }
 
 export function getDraft(id: string): Draft | undefined {
@@ -128,13 +154,15 @@ export function decideDraft(
   decision: "approve" | "reject",
   finalText: string | null,
   by: string,
-  reason: string | null = null
+  reason: string | null = null,
+  variant: number | null = null
 ): Draft | undefined {
   const existing = getDraft(id);
   if (!existing || existing.status !== "pending") return existing;
   db()
     .prepare(
-      `UPDATE drafts SET status = ?, final_text = ?, decided_by = ?, decided_at = ?, reason = ? WHERE id = ?`
+      `UPDATE drafts SET status = ?, final_text = ?, decided_by = ?, decided_at = ?, reason = ?,
+                         selected_variant = ? WHERE id = ?`
     )
     .run(
       decision === "approve" ? "approved" : "rejected",
@@ -142,6 +170,7 @@ export function decideDraft(
       by,
       Date.now(),
       reason,
+      variant,
       id
     );
   return getDraft(id);

@@ -18,6 +18,7 @@ Test the wiring offline:  export LLM_PROVIDER=mock
 """
 import json
 import os
+import re
 
 LAST_LLM_ERROR = None   # set when a real call fails and we fall back (for debugging)
 
@@ -233,3 +234,80 @@ def resolve_converser(config):
         return make_llm_converser(prov, api_key=key, model=os.getenv("LLM_MODEL"),
                                   base_url=os.getenv("LLM_BASE_URL"))
     return template_converse
+
+
+# ---- on-demand draft alternatives (used by the approval dashboard) ---
+def _fallback_variants(draft):
+    """Deterministic tone variants: (1) more concise, (2) warmer. Used offline
+    and as the safety net when the LLM call fails."""
+    draft = (draft or "").strip()
+    out = []
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", draft) if p.strip()]
+    if len(parts) > 2:
+        out.append(" ".join([parts[0], parts[-1]]))
+    elif len(parts) == 2:
+        out.append(parts[-1])
+    else:
+        trimmed = re.sub(r"^(hi|hello|dear)[^\u2014:,–-]*[\u2014:,–-]\s*", "", draft, flags=re.I).strip()
+        out.append(trimmed)
+    out.append(draft + " No pressure at all — happy to help however suits you best.")
+    return out
+
+
+def _llm_variant_gen(provider, api_key, model, base_url, timeout=30):
+    import urllib.request
+
+    def gen(draft, context):
+        global LAST_LLM_ERROR
+        system = ("You rewrite an already-drafted customer message in alternative phrasings. "
+                  "Produce exactly 2 alternatives: (1) more concise, (2) warmer and more personal. "
+                  "Keep every fact, price and commitment identical. Never add promises, guarantees, "
+                  "discounts or availability claims. Reply with ONLY a JSON array of 2 strings.")
+        req = build_request(provider, system, "Draft: " + json.dumps(draft), api_key, model, base_url)
+        try:
+            r = urllib.request.Request(req["url"], data=json.dumps(req["body"]).encode(),
+                                       headers=req["headers"], method="POST")
+            with urllib.request.urlopen(r, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode())
+            text = parse_response(provider, data)
+            arr = json.loads(text[text.index("["):text.rindex("]") + 1])
+            return [str(x) for x in arr][:2]
+        except Exception as ex:
+            LAST_LLM_ERROR = repr(ex)
+            return _fallback_variants(draft)
+
+    return gen
+
+
+def make_variants(config, gen=None):
+    """Build callable(draft, context) -> up to 2 alternative phrasings for the
+    approval dashboard's "Alternatives" button. Uses the LLM when configured
+    (same env vars as the drafter), deterministic tone variants otherwise.
+    Every variant passes the SAME policy gate as the original draft — a
+    blocked variant is silently dropped, never offered to the manager."""
+    from .config import build_policies
+    from attesta.policy import evaluate
+    pols = build_policies(config)
+
+    if gen is None:
+        provider = (os.getenv("LLM_PROVIDER") or "").lower()
+        key = os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+        if provider in ("openai", "anthropic", "openai-compatible") and key:
+            prov = "anthropic" if provider == "anthropic" else "openai"
+            gen = _llm_variant_gen(prov, key, os.getenv("LLM_MODEL"), os.getenv("LLM_BASE_URL"))
+        else:
+            gen = lambda draft, ctx: _fallback_variants(draft)
+
+    def variants(draft, context=None):
+        try:
+            vs = gen(draft, context) or []
+        except Exception:
+            vs = _fallback_variants(draft)
+        clean = []
+        for v in vs:
+            v = (v or "").strip()
+            if v and v != draft and v not in clean and evaluate(v, pols)["decision"] != "block":
+                clean.append(v)
+        return clean[:2]
+
+    return variants

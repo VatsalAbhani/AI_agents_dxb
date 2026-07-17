@@ -36,8 +36,14 @@ def _request(method, url, api_key, body=None, timeout=15):
 
 
 def remote_approver(base_url, api_key="demo-key", client="demo", channel="whatsapp",
-                    timeout=DEFAULT_TIMEOUT, poll_every=DEFAULT_POLL, quiet=False):
-    """Build a Gateway-compatible approver backed by the approval dashboard."""
+                    timeout=DEFAULT_TIMEOUT, poll_every=DEFAULT_POLL, quiet=False,
+                    variants=None):
+    """Build a Gateway-compatible approver backed by the approval dashboard.
+
+    `variants` (optional): callable(draft, context) -> list of alternative
+    phrasings, generated ON DEMAND when the manager taps "Alternatives" on the
+    dashboard (see drafter.make_variants). Generation cost is only paid when a
+    human actually asks for options."""
     base = base_url.rstrip("/")
 
     def approver(draft, context):
@@ -58,6 +64,7 @@ def remote_approver(base_url, api_key="demo-key", client="demo", channel="whatsa
         if not quiet:
             print(f"    [approval] waiting for manager decision on {base}/approvals …")
         deadline = time.time() + timeout
+        variants_posted = False
         while time.time() < deadline:
             try:
                 r = _request("GET", f"{base}/api/drafts/{draft_id}", api_key)
@@ -70,12 +77,25 @@ def remote_approver(base_url, api_key="demo-key", client="demo", channel="whatsa
                            "by": r.get("by") or "Manager"}
                 if r.get("reason"):
                     verdict["reason"] = r["reason"]
+                if r.get("variant") is not None:
+                    verdict["variant"] = r["variant"]
                 return verdict
             if r.get("status") == "rejected":
                 verdict = {"decision": "reject", "by": r.get("by") or "Manager"}
                 if r.get("reason"):
                     verdict["reason"] = r["reason"]
                 return verdict
+            # the manager asked for alternatives — generate once, on demand
+            if (variants is not None and not variants_posted
+                    and r.get("variants_requested") and not r.get("has_variants")):
+                variants_posted = True
+                try:
+                    vs = variants(draft, ctx)
+                    if vs:
+                        _request("POST", f"{base}/api/drafts/{draft_id}/variants",
+                                 api_key, {"variants": vs})
+                except (urllib.error.URLError, OSError, ValueError):
+                    pass  # alternatives are best-effort; approval flow continues
             time.sleep(poll_every)
 
         return {"decision": "reject", "by": "approval-timeout — fail closed"}

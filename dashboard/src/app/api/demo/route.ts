@@ -23,6 +23,10 @@ export async function POST() {
       policy: ["HUMAN APPROVAL REQUIRED"],
       intent: { tier: "Warm", action: "ask", high_intent: false },
       relationship: "new",
+      variants: [
+        "We have consultation slots tomorrow 2–6pm — shall I hold one for you?",
+        "Hi Sara — lovely to hear from you! We'd be delighted to see you tomorrow; slots are open between 2 and 6pm. Want me to reserve the time that suits you best?",
+      ],
     },
     {
       lead_name: "Omar A.",

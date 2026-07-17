@@ -15,5 +15,8 @@ export async function GET(
     final: row.final_text,
     by: row.decided_by,
     reason: row.reason,
+    variant: row.selected_variant,
+    variants_requested: !!row.variants_requested,
+    has_variants: !!row.variants,
   });
 }

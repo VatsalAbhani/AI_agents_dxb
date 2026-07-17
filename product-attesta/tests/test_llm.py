@@ -64,6 +64,24 @@ broken = make_llm_drafter(provider="openai", api_key="x", base_url="http://127.0
 out = broken(LEAD, cfg)
 ok("fell back to template text instead of crashing", out == template_drafter(LEAD, cfg))
 
+print("\n== on-demand variants (Alternatives button) ==")
+from agent_template.drafter import make_variants, _fallback_variants  # noqa: E402
+long_draft = ("Hi Rahul — happy to help. We have two strong options in Dubai Marina right now. "
+              "Both are ready units with good layouts. Shall I set up a viewing this week?")
+fv = _fallback_variants(long_draft)
+ok("fallback returns 2 variants", len(fv) == 2)
+ok("concise variant is shorter", len(fv[0]) < len(long_draft))
+ok("variants differ from the draft", all(v != long_draft for v in fv))
+
+vgen = make_variants(realestate_config("ABC"))
+vs = vgen(long_draft, {})
+ok("make_variants returns ≤2 clean variants", 0 < len(vs) <= 2 and all(v != long_draft for v in vs))
+
+bad_gen = lambda d, c: ["A perfectly fine alternative phrasing.",
+                        "We guarantee 20% returns if you sign today!"]
+filtered = make_variants(realestate_config("ABC"), gen=bad_gen)(long_draft, {})
+ok("policy-violating variant is dropped", len(filtered) == 1 and "guarantee" not in filtered[0])
+
 print("\n== env-driven resolver ==")
 os.environ.pop("LLM_PROVIDER", None); os.environ.pop("OPENAI_API_KEY", None)
 ok("no env -> offline template", resolve_drafter(cfg) is template_drafter)

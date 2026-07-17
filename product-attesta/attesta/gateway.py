@@ -45,6 +45,8 @@ class Gateway:
             }
             if verdict.get("reason"):
                 payload["reason"] = verdict["reason"]   # why the human edited/rejected
+            if verdict.get("variant") is not None:
+                payload["variant"] = verdict["variant"]  # which alternative the human chose
             self.rec.event("approval", verdict.get("decision", "approve"), payload)
             if verdict.get("decision") == "reject":
                 return {"status": "rejected", "by": verdict.get("by"), "final": None}

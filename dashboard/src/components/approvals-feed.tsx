@@ -32,7 +32,19 @@ type Draft = {
   relationship: string | null;
   reason: string | null;
   priority: number;
+  variants: string | null;
+  variants_requested: number;
+  selected_variant: number | null;
 };
+
+function parseVariants(d: Draft): string[] {
+  try {
+    const v = d.variants ? JSON.parse(d.variants) : null;
+    return Array.isArray(v) ? v.map(String) : [];
+  } catch {
+    return [];
+  }
+}
 
 type Metrics = {
   pending: number;
@@ -117,18 +129,25 @@ export function ApprovalsFeed() {
     return () => clearInterval(t);
   }, [refresh]);
 
+  async function requestAlternatives(d: Draft) {
+    await fetch(`/api/drafts/${d.id}/variants/request`, { method: "POST" });
+    toast.message("Asking the agent for alternative phrasings…");
+    refresh();
+  }
+
   async function decide(
     d: Draft,
     decision: "approve" | "reject",
     finalText?: string,
-    reason?: string
+    reason?: string,
+    variant?: number
   ) {
     setBusy(d.id);
     try {
       const res = await fetch(`/api/drafts/${d.id}/decide`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision, final: finalText, by: "Manager", reason }),
+        body: JSON.stringify({ decision, final: finalText, by: "Manager", reason, variant }),
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success(
@@ -207,6 +226,7 @@ export function ApprovalsFeed() {
         {pending.map((d) => {
           const m = meta(d);
           const relationshipLead = d.relationship && d.relationship !== "new";
+          const variants = parseVariants(d);
           return (
             <Card
               key={d.id}
@@ -270,6 +290,35 @@ export function ApprovalsFeed() {
                     </Badge>
                   ))}
                 </div>
+                {variants.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
+                      ALTERNATIVES — TAP TO SEND INSTEAD
+                    </p>
+                    {variants.map((v, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 rounded-md border border-dashed p-2.5"
+                      >
+                        <p className="flex-1 text-sm leading-relaxed">{v}</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0"
+                          disabled={busy === d.id}
+                          onClick={() => decide(d, "approve", v, undefined, i)}
+                        >
+                          Send this
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {variants.length === 0 && !!d.variants_requested && (
+                  <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
+                    GENERATING ALTERNATIVES — THE AGENT IS WRITING…
+                  </p>
+                )}
               </CardContent>
               <CardFooter className="gap-2">
                 <Button
@@ -291,6 +340,16 @@ export function ApprovalsFeed() {
                 >
                   Edit
                 </Button>
+                {variants.length === 0 && !d.variants_requested && (
+                  <Button
+                    variant="secondary"
+                    className="h-12"
+                    disabled={busy === d.id}
+                    onClick={() => requestAlternatives(d)}
+                  >
+                    Alternatives
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="h-12 text-destructive hover:text-destructive"
@@ -328,10 +387,17 @@ export function ApprovalsFeed() {
                     REJECTED
                   </Badge>
                 )}
-                {d.final_text && d.final_text !== d.draft && (
+                {d.selected_variant !== null ? (
                   <Badge variant="outline" className="font-mono text-[10px]">
-                    EDITED
+                    ALT #{d.selected_variant + 1} CHOSEN
                   </Badge>
+                ) : (
+                  d.final_text &&
+                  d.final_text !== d.draft && (
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      EDITED
+                    </Badge>
+                  )
                 )}
                 {d.priority === 1 && d.decided_at && (
                   <Badge variant="outline" className="border-primary/50 font-mono text-[10px] text-primary">

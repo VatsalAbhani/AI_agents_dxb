@@ -25,6 +25,7 @@ export async function POST(
   const by = typeof body.by === "string" && body.by.trim() ? body.by.trim() : "Manager";
   const reason =
     typeof body.reason === "string" && body.reason.trim() ? body.reason.trim() : null;
-  const row = decideDraft(id, decision, finalText, by, reason);
+  const variant = Number.isInteger(body.variant) ? body.variant : null;
+  const row = decideDraft(id, decision, finalText, by, reason, variant);
   return NextResponse.json({ draft: row });
 }
