@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attesta — the evidence layer for AI agents</title>
+  <meta name="description" content="A tamper-evident flight recorder for AI agents: hash-chained records of every LLM call, tool call and approval — verifiable offline, replayable without side effects, honest about divergence." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FAF8F2'/%3E%3Crect x='6' y='6' width='20' height='20' fill='none' stroke='%23FF4D00' stroke-width='3'/%3E%3Crect x='12' y='12' width='8' height='8' fill='%2314150F'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav">
+    <a class="nav__mark" href="#top">
+      <span class="nav__glyph" aria-hidden="true"></span>ATTESTA
+    </a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#problem">§01 Problem</a>
+      <a href="#primitives">§02 Primitives</a>
+      <a href="#code">§03 Code</a>
+      <a href="#answers">§04 Straight answers</a>
+    </nav>
+    <a class="btn btn--ghost" href="https://github.com/VatsalAbhani/AI_agents_dxb" rel="noopener">GitHub ↗</a>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="top">
+    <div class="hero__text">
+      <p class="eyebrow">ATTESTA · OPEN EVIDENCE LAYER FOR AI AGENTS · DUBAI</p>
+      <h1 class="hero__title">
+        <span>RECORD.</span>
+        <span>VERIFY.</span>
+        <span>REPLAY.</span>
+        <span class="accent">PROVE.</span>
+      </h1>
+      <p class="hero__sub">
+        Attesta is a tamper-evident flight recorder for AI agents — a hash-chained record of
+        every LLM call, tool call, policy check and human approval. Verifiable offline by anyone.
+        Replayable without side effects. <em>Honest about divergence.</em>
+      </p>
+      <div class="hero__cta">
+        <a class="btn" href="#code">Read the code</a>
+        <a class="btn btn--ghost" href="#primitives">The four primitives ↓</a>
+      </div>
+    </div>
+
+    <!-- the page verifies itself -->
+    <figure class="verifier" aria-label="A ledger verifying itself">
+      <figcaption class="verifier__head">
+        <span>RUN 0147 · LEDGER</span><span class="verifier__status" id="v-status">VERIFYING…</span>
+      </figcaption>
+      <ol class="verifier__list" id="v-list">
+        <li data-hash="7b1e"><i>#01</i> lead.received <b class="h">····</b> <u>·</u></li>
+        <li data-hash="8f3a"><i>#02</i> llm.draft <b class="h">····</b> <u>·</u></li>
+        <li data-hash="c17d"><i>#03</i> policy.check PASS <b class="h">····</b> <u>·</u></li>
+        <li data-hash="44b0"><i>#04</i> approval by:manager <b class="h">····</b> <u>·</u></li>
+        <li data-hash="9e2c"><i>#05</i> whatsapp.sent <b class="h">····</b> <u>·</u></li>
+        <li data-hash="1a5d"><i>#06</i> lead.message <b class="h">····</b> <u>·</u></li>
+        <li data-hash="e881"><i>#07</i> policy.check BLOCK <b class="h">····</b> <u>·</u></li>
+        <li data-hash="f3e7"><i>#08</i> approval + rewrite.sent <b class="h">····</b> <u>·</u></li>
+      </ol>
+      <div class="verifier__seal" id="v-seal">MERKLE a3f9 · SIGNATURE VALID · <strong>INTACT ✓</strong></div>
+    </figure>
+  </section>
+
+  <!-- ============ §01 PROBLEM ============ -->
+  <section class="section" id="problem">
+    <p class="label">§01 / THE PROBLEM</p>
+    <h2 class="h2">Agents are non-deterministic software<br />taking real-world actions.</h2>
+    <div class="cols">
+      <div class="col" data-reveal>
+        <h3>You can't reproduce a failure.</h3>
+        <p>A run depends on model outputs, tool responses, timing and randomness.
+           When an agent misbehaves, that exact run is gone forever — debugging is guesswork.</p>
+      </div>
+      <div class="col" data-reveal>
+        <h3>You can't prove what happened.</h3>
+        <p>Ordinary logs are mutable. Whoever holds the database can edit history — so a log
+           is an account, not evidence. Auditors, customers and counterparties have to trust you.</p>
+      </div>
+      <div class="col" data-reveal>
+        <h3>Logging isn't control.</h3>
+        <p>Observability tools tell you what happened <em>after</em> the message reached a customer.
+           The dangerous moment is <em>before</em>.</p>
+      </div>
+    </div>
+    <p class="pull serif" data-reveal>Aviation solved this sixty years ago. It's called a flight recorder.</p>
+  </section>
+
+  <!-- ============ §02 PRIMITIVES ============ -->
+  <section class="section section--ruled" id="primitives">
+    <p class="label">§02 / FOUR PRIMITIVES</p>
+    <h2 class="h2">One core, four guarantees.</h2>
+    <ol class="prims">
+      <li class="prim" data-reveal>
+        <p class="prim__num">01</p>
+        <h3 class="prim__name">RECORD</h3>
+        <p>Every non-deterministic boundary — LLM calls, tool calls, time, randomness — is captured
+           into an append-only, hash-chained ledger. Each entry commits to the previous one;
+           the run is sealed with a Merkle root and signature.</p>
+      </li>
+      <li class="prim" data-reveal>
+        <p class="prim__num">02</p>
+        <h3 class="prim__name">VERIFY</h3>
+        <p>Anyone can recompute the chain offline — no API, no server, no trust in us required.
+           Change one comma in one entry and every fingerprint after it stops matching.</p>
+      </li>
+      <li class="prim" data-reveal>
+        <p class="prim__num">03</p>
+        <h3 class="prim__name">REPLAY</h3>
+        <p>Re-run an agent against its recorded inputs. Replay never makes a live call —
+           no rogue messages, no double payments. Divergence is detected and reported, honestly.</p>
+      </li>
+      <li class="prim" data-reveal>
+        <p class="prim__num">04</p>
+        <h3 class="prim__name">PROVE</h3>
+        <p>A gateway checks policy and requires human approval <em>before</em> actions execute —
+           and the whole run becomes a sealed, client-ready audit report after.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ §03 CODE ============ -->
+  <section class="section" id="code">
+    <p class="label">§03 / THE CODE</p>
+    <h2 class="h2">Drop-in. Zero dependencies.<br />Pure Python core.</h2>
+    <div class="codegrid">
+      <div class="codeblock" data-reveal>
+        <p class="codeblock__title">RECORD + GUARD</p>
+<pre><code><span class="k">from</span> attesta <span class="k">import</span> Recorder, Gateway
+
+rec  = Recorder(<span class="s">"record"</span>)          <span class="c"># wraps every boundary</span>
+gate = Gateway(rec, approver=manager) <span class="c"># human before send</span>
+
+reply = rec.llm(<span class="s">"draft"</span>, call_model, lead)
+gate.send(<span class="s">"whatsapp"</span>, reply, deliver)
+
+rec.ledger.seal(key)                  <span class="c"># Merkle root + signature</span>
+rec.ledger.save(<span class="s">"run.jsonl"</span>)</code></pre>
+      </div>
+      <div class="codeblock codeblock--term" data-reveal>
+        <p class="codeblock__title">VERIFY — OFFLINE, BY ANYONE</p>
+        <pre class="term" id="term" data-lines='["$ attesta verify run.jsonl","chain      34/34 entries linked ✓","merkle     a3f9c2e1 recomputed ✓","seal       signature valid ✓","verdict    INTACT — nothing altered"]'><code></code><span class="term__cursor" aria-hidden="true">▮</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ §04 STRAIGHT ANSWERS ============ -->
+  <section class="section section--ruled" id="answers">
+    <p class="label">§04 / STRAIGHT ANSWERS</p>
+    <h2 class="h2">What we won't claim.</h2>
+    <dl class="answers">
+      <div class="answer" data-reveal>
+        <dt>Can you replay an LLM bit-for-bit?</dt>
+        <dd>No — and nobody honestly can. Replay serves recorded outputs and cryptographically
+            reports <em>reproduced vs diverged</em>. Verifiable divergence detection, not a magic trick.</dd>
+      </div>
+      <div class="answer" data-reveal>
+        <dt>Is the v0 seal asymmetric?</dt>
+        <dd>Not yet. v0 signs with HMAC — tamper-evident, but the key-holder could re-sign.
+            Ed25519 signing and public transparency-log anchoring are the next core milestone;
+            until they ship, we say "tamper-evident", never "independently verifiable".</dd>
+      </div>
+      <div class="answer" data-reveal>
+        <dt>Isn't logging enough?</dt>
+        <dd>Logging is testimony after the fact. Attesta adds control before it —
+            policy checks and human approval gate the action itself. Block, approve, prove.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ============ §05 BUILT ON IT ============ -->
+  <section class="section" id="guard">
+    <p class="label">§05 / BUILT ON ATTESTA</p>
+    <div class="guardcard" data-reveal>
+      <div>
+        <p class="guardcard__kicker">FIRST PRODUCT · LIVE IN DUBAI</p>
+        <h2 class="h2 guardcard__title">Leadcode <em>Guard</em></h2>
+        <p class="guardcard__body">AI lead follow-up for real-estate brokerages and clinics —
+           every reply approved by a manager before it sends, every action sealed in an
+           Attesta ledger. The evidence layer, doing a day's work.</p>
+      </div>
+      <a class="btn btn--solid" href="/guard/">Visit the Guard site →</a>
+    </div>
+  </section>
+
+  <!-- ============ §06 DESTINATION ============ -->
+  <section class="section section--ruled" id="destination">
+    <p class="label">§06 / WHERE THIS GOES</p>
+    <p class="pull serif" data-reveal>
+      Agents are starting to transact. Every transaction will need a receipt someone can trust —
+      authorization, dispute, reconciliation. <em class="accent-text">Attesta is built to be that receipt.</em>
+    </p>
+  </section>
+
+  <!-- ============ CONTACT / FOOTER ============ -->
+  <footer class="footer" id="contact">
+    <div class="footer__cta">
+      <p class="footer__big">Building agents that act in the real world?</p>
+      <div class="footer__row">
+        <a class="btn btn--solid" href="mailto:hello@leadcode.ae?subject=Attesta">hello@leadcode.ae</a>
+        <a class="btn btn--ghost" href="https://github.com/VatsalAbhani/AI_agents_dxb" rel="noopener">Star the repo ↗</a>
+      </div>
+    </div>
+    <div class="footer__meta">
+      <span><span class="nav__glyph" aria-hidden="true"></span>ATTESTA · DUBAI, UAE</span>
+      <span lang="ar" dir="rtl">صُنع في دبي</span>
+      <span>© 2026 · EVERY CLAIM ON THIS PAGE IS VERIFIABLE ✓</span>
+    </div>
+  </footer>
+
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
