@@ -13,6 +13,10 @@ export async function POST() {
       policy: ["HUMAN APPROVAL REQUIRED"],
       intent: { tier: "Hot", action: "escalate", high_intent: true },
       relationship: "new",
+      variants: [
+        "Connecting you with our senior consultant now — they handle Marina purchases personally. Anything you'd like them to prepare?",
+        "You clearly know what you want, Rahul — our senior consultant will reach out right away. Anything specific you'd like ready for that call?",
+      ],
     },
     {
       lead_name: "Sara K.",
@@ -37,6 +41,10 @@ export async function POST() {
       policy: ["HUMAN APPROVAL REQUIRED"],
       intent: { tier: "Warm", action: "share_options", high_intent: false },
       relationship: "returning",
+      variants: [
+        "The developer just released a new JVC payment schedule — want a quick call to go through it?",
+        "Lovely to hear from you again, Omar! The new JVC payment schedule is out — shall we set up a quick call to walk through the options together?",
+      ],
     },
   ];
   const rows = samples.map((s) => insertDraft(s));

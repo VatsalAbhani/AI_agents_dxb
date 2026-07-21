@@ -34,6 +34,7 @@ type Draft = {
   priority: number;
   variants: string | null;
   variants_requested: number;
+  variants_requested_at: number | null;
   selected_variant: number | null;
 };
 
@@ -314,11 +315,16 @@ export function ApprovalsFeed() {
                     ))}
                   </div>
                 )}
-                {variants.length === 0 && !!d.variants_requested && (
-                  <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
-                    GENERATING ALTERNATIVES — THE AGENT IS WRITING…
-                  </p>
-                )}
+                {variants.length === 0 && !!d.variants_requested &&
+                  (!d.variants_requested_at || Date.now() - d.variants_requested_at > 25000 ? (
+                    <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
+                      NO LIVE AGENT ON THIS DRAFT — APPROVE OR EDIT INSTEAD
+                    </p>
+                  ) : (
+                    <p className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
+                      GENERATING ALTERNATIVES — THE AGENT IS WRITING…
+                    </p>
+                  ))}
               </CardContent>
               <CardFooter className="gap-2">
                 <Button

@@ -22,6 +22,7 @@ export type Draft = {
   priority: number; // 1 = high-intent (sorted first)
   variants: string | null; // JSON: alternative phrasings, generated on demand
   variants_requested: number; // 1 = manager tapped "Alternatives", agent is generating
+  variants_requested_at: number | null; // when — so the UI can time out honestly
   selected_variant: number | null; // which alternative was sent (null = primary/edited)
 };
 
@@ -62,6 +63,7 @@ export function db(): Database.Database {
       ["variants", "ALTER TABLE drafts ADD COLUMN variants TEXT"],
       ["variants_requested", "ALTER TABLE drafts ADD COLUMN variants_requested INTEGER NOT NULL DEFAULT 0"],
       ["selected_variant", "ALTER TABLE drafts ADD COLUMN selected_variant INTEGER"],
+      ["variants_requested_at", "ALTER TABLE drafts ADD COLUMN variants_requested_at INTEGER"],
     ] as const) {
       if (!cols.includes(col)) handle.exec(ddl);
     }
@@ -102,6 +104,7 @@ export function insertDraft(input: {
     priority: highIntent ? 1 : 0,
     variants: input.variants?.length ? JSON.stringify(input.variants) : null,
     variants_requested: 0,
+    variants_requested_at: null,
     selected_variant: null,
   };
   db()
@@ -118,7 +121,7 @@ export function insertDraft(input: {
 export function requestVariants(id: string): Draft | undefined {
   const existing = getDraft(id);
   if (!existing || existing.status !== "pending") return existing;
-  db().prepare("UPDATE drafts SET variants_requested = 1 WHERE id = ?").run(id);
+  db().prepare("UPDATE drafts SET variants_requested = 1, variants_requested_at = ? WHERE id = ?").run(Date.now(), id);
   return getDraft(id);
 }
 
