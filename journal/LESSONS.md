@@ -89,3 +89,18 @@ hero still said "verifiable offline by anyone" and VERIFY said "no trust in us
 required" — a reviewer caught the contradiction immediately. → *Rule: when a
 limitation is documented, grep the whole page/site for every claim that
 contradicts it; the strongest claim anywhere is the one prospects hold you to.*
+
+**L18 · On-demand features need an honest no-provider state.** "Alternatives"
+waits on a live polling agent; demo-seeded cards have none, so the UI said
+"generating…" forever (Vatsal hit it in production). → *Rule: anything that
+waits on an external worker gets a timestamped request + a visible timeout
+("no live agent on this draft"), and demo data always exercises the happy
+path (pre-seeded variants).*
+
+**L19 · Railway deploy semantics.** API `serviceConnect` clones a public repo
+WITHOUT the GitHub App — but pushes don't trigger builds (no webhook), and
+`serviceInstanceDeploy` rebuilds the pinned commit, not the branch tip.
+Re-running `serviceConnect` re-resolves the tip and builds it. → *Rule: until
+the Railway GitHub App is installed, deploy = push + reconnect via API; verify
+the deployed build actually contains the change (column/behavior probe), not
+just status SUCCESS.*
