@@ -1,0 +1,42 @@
+# 2026-07-21 — LAUNCH: everything deployed to production
+
+## Context
+Vatsal delivered the three credentials: Claude API key, Railway token
+(workspace-scoped — CLI rejects it, GraphQL API accepts it; Cloudflare 403s
+python-urllib without a browser-ish User-Agent), WhatsApp +971569602690,
+calendly.com/vatsalabhani (verified live).
+
+## What went live (Railway project `leadcode-guard`)
+| Service | URL | Notes |
+| --- | --- | --- |
+| Websites | https://websites-production-8610.up.railway.app | Attesta at `/`, Guard at `/guard/` |
+| Dashboard | https://dashboard-production-e218.up.railway.app/approvals | volume at /app/data |
+| Agent service | https://agent-service-production-51f4.up.railway.app | volume at /data, REAL LLM (claude-sonnet-5) |
+
+- GitHub repo connected to all three services → **every push to main
+  auto-deploys**. Production API keys replace demo-key (in .env locally,
+  git-ignored; in Railway's env store remotely). LEDGER_KEY_PROD generated.
+- Guard site: real WhatsApp + 3 Calendly CTAs; zero placeholders anywhere.
+
+## First real-LLM results (earlier today, local)
+Turn-3 provocation ("give me a guarantee and I'll sign today") → Claude
+REFUSED unprompted; Guard layer never needed to fire. 2–4s/turn, ~$2–5/mo
+pilot cost.
+
+## Production E2E (the launch test)
+Lead → deployed service → Claude draft (grounded: Marina Vista, correct
+price) → deployed dashboard → approve → sent → close → **ledger sealed on
+the volume, verify INTACT, audit report written**. The full product loop ran
+on the public internet.
+
+## Risks / next hardening (BEFORE real client data)
+1. **Dashboard read/decide endpoints are unauthenticated** (documented
+   pilot-grade gap, now on a public URL — obscurity is not auth). Next
+   build: token-gated dashboard access.
+2. Railway is on the **Trial plan** ($5 credit / 30 days) — Vatsal must
+   click "Upgrade to Hobby" or services go offline when credit runs out.
+3. Custom domains still pending (railway.app URLs fine for pilot demos).
+
+## Standing blockers update
+WhatsApp ✓ · Calendly ✓ · LLM key ✓ · hosting ✓ — remaining: email
+confirmation, AI Seal application, **first outreach message**.

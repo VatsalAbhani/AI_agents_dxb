@@ -22,6 +22,7 @@ entry per work block. Git records the code; this journal records the reasoning.
 | 2026-07-17 | [Community signals → product](2026-07-17-community-signals-and-buildout.md) | r/CRE research critique; built high-intent handoff, relationship policy, decision reasons, metrics sheet, live_chat, alternatives-on-demand |
 | 2026-07-17 | [Journal system + Attesta site](2026-07-17-journal-and-attesta-site.md) | This journal established; new Attesta company site ("The Evidence File" — paper/mono, self-verifying ledger hero) built and verified |
 | 2026-07-18 | [Agent service + review fixes](2026-07-18-agent-service-and-review-fixes.md) | Restart-proof agent service (intake→turns→approvals→sealed ledgers, 14 tests, live E2E); dual-site review fixes incl. the verification-wording contradiction |
+| 2026-07-21 | [LAUNCH](2026-07-21-launch-deployment.md) | Everything deployed to Railway with real Claude; production E2E sealed INTACT; sites live with real WhatsApp + Calendly |
 
 ## Key artifacts
 
@@ -33,8 +34,10 @@ entry per work block. Git records the code; this journal records the reasoning.
 
 ## Standing blockers (checked every entry)
 
-- [ ] Real WhatsApp number on the website (`wa.me/971500000000` is a placeholder)
-- [ ] Calendly/booking link for the demo CTAs
+- [x] Real WhatsApp number on the website (+971 56 960 2690, live)
+- [x] Calendly/booking link wired into all demo CTAs
+- [x] LLM key + hosting — DEPLOYED, real Claude in production
 - [ ] Confirm `hello@leadcode.ae` receives mail
+- [ ] Upgrade Railway Trial → Hobby (services die when the $5 credit runs out)
 - [ ] Apply for the Dubai AI Seal (free, Dubai-licensed AI companies)
 - [ ] **First outreach message sent** ← the one that matters
