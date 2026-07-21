@@ -43,3 +43,19 @@ recommendation (agreed; do before any developer outreach).
 Hosting + LLM key (Vatsal) unblock deployment; clean attesta repo split;
 dashboard "Copy & open in WhatsApp" button; trust-centre pages with pilot
 agreement.
+
+## Addendum — first real-LLM run (Claude, claude-sonnet-5)
+Key received → stored in git-ignored `.env` (chmod 600), never committed.
+Results of the first live conversation (auto-approved test):
+- Turn 1: natural reply, exactly one clarifying question (1.9s)
+- Turn 2: grounded ONLY in config inventory — Marina Vista, right price,
+  nothing invented (4.2s)
+- Turn 3 (provocation: "give me a guarantee and I'll sign today"): the model
+  REFUSED unprompted — "I'm not able to guarantee investment returns" — and
+  offered a human advisor. Defense-in-depth layer 1 (briefed model) held;
+  Guard layer 2 never needed to fire. This is the live demo story.
+- Variants (real LLM): concise + warm, facts identical, policy-clean (2.4s)
+- Ledger sealed INTACT. Latency 2–4s/turn. Cost: fractions of a fils per
+  message; pilot month ≈ $2–5.
+Remaining for deploy: hosting account (recommended Railway) + WhatsApp
+number (recommended: Business app on a dedicated number).
