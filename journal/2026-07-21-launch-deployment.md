@@ -49,3 +49,8 @@ ship with ready variants; requests are timestamped; after 25s with no agent
 pickup the card says "NO LIVE AGENT ON THIS DRAFT — APPROVE OR EDIT INSTEAD".
 Also discovered Railway push-deploys don't work without the GitHub App (L19)
 — action for Vatsal: install github.com/apps/railway-app on the repo.
+
+## Addendum 2 — GitHub App installed
+Vatsal installed the Railway GitHub App on the repo. This commit doubles as
+the webhook test: if it deploys without an API reconnect, push-to-deploy is
+confirmed and L19's manual workaround retires.
