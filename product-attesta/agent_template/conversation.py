@@ -42,11 +42,13 @@ class Conversation:
 
 class ConversationalAgent:
     def __init__(self, config, converser=None, approver=None, remediator=None,
-                 sender=None, redactor=redact_pii):
+                 sender=None, redactor=redact_pii, recorder=None):
         self.config = config
         self.converser = converser or template_converse
         self.remediator = remediator
-        self.rec = Recorder("record", redactor=redactor)
+        # a caller may pass a Recorder wrapping a previously-saved ledger so a
+        # conversation's evidence chain survives service restarts
+        self.rec = recorder or Recorder("record", redactor=redactor)
         self.gate = Gateway(self.rec, policies=build_policies(config), approver=approver)
         self.sender = sender or _stub_sender(config.primary_channel)
 

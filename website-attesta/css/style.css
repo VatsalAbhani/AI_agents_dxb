@@ -263,3 +263,13 @@ body {
   .term__cursor { animation: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+/* quickstart + integration matrix (§03) */
+.quickstart { margin-top: 1.5rem; border: 1px solid var(--ink); background: var(--ink); box-shadow: 6px 6px 0 var(--hair); }
+.quickstart pre { padding: 1.1rem; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.8; color: #f2efe6; }
+.quickstart .c { color: rgba(250, 248, 242, 0.42); }
+.matrix { margin-top: 2.5rem; width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.8rem; }
+.matrix__caption { text-align: left; font-size: 0.66rem; letter-spacing: 0.2em; color: var(--ink-faint); padding-bottom: 0.7rem; }
+.matrix td { border-top: 1px solid var(--hair); padding: 0.7rem 0.5rem 0.7rem 0; color: var(--ink-soft); }
+.matrix td:last-child { text-align: right; letter-spacing: 0.12em; font-size: 0.7rem; white-space: nowrap; }
+.matrix td.ok { color: var(--orange); font-weight: 600; }

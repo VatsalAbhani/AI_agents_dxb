@@ -76,3 +76,16 @@ you quote.*
 (Dubai AI, r/CRE) produced great material — and zero booked meetings. →
 *Rule: every research block ends by naming the next SALES action, and the
 standing blockers list gets checked in every journal entry.*
+
+**L16 · Grid children holding `pre`/tables need `min-width: 0`.** The Attesta
+codeblocks blew out to 533px on a 375px viewport because grid items default to
+min-width:auto and take the pre's min-content width. → *Rule: any grid/flex
+child containing code blocks or tables gets min-width:0; check mobile
+scrollWidth after adding one.*
+
+**L17 · Claim consistency audits cover EVERY instance, not the dedicated
+section.** Attesta's §04 honestly documented the HMAC limitation while the
+hero still said "verifiable offline by anyone" and VERIFY said "no trust in us
+required" — a reviewer caught the contradiction immediately. → *Rule: when a
+limitation is documented, grep the whole page/site for every claim that
+contradicts it; the strongest claim anywhere is the one prospects hold you to.*

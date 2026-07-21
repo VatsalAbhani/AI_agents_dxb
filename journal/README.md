@@ -21,6 +21,7 @@ entry per work block. Git records the code; this journal records the reasoning.
 | 2026-07-16 | [Dubai AI research](2026-07-16-research-dubai-ai.md) | KT article + DFF/WEF report deep-dive; found the regulatory goldmine (CR 56/2024, RERA); AI Seal action item |
 | 2026-07-17 | [Community signals → product](2026-07-17-community-signals-and-buildout.md) | r/CRE research critique; built high-intent handoff, relationship policy, decision reasons, metrics sheet, live_chat, alternatives-on-demand |
 | 2026-07-17 | [Journal system + Attesta site](2026-07-17-journal-and-attesta-site.md) | This journal established; new Attesta company site ("The Evidence File" — paper/mono, self-verifying ledger hero) built and verified |
+| 2026-07-18 | [Agent service + review fixes](2026-07-18-agent-service-and-review-fixes.md) | Restart-proof agent service (intake→turns→approvals→sealed ledgers, 14 tests, live E2E); dual-site review fixes incl. the verification-wording contradiction |
 
 ## Key artifacts
 

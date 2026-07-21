@@ -6,6 +6,11 @@
   <title>Attesta — the evidence layer for AI agents</title>
   <meta name="description" content="A tamper-evident flight recorder for AI agents: hash-chained records of every LLM call, tool call and approval — verifiable offline, replayable without side effects, honest about divergence." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FAF8F2'/%3E%3Crect x='6' y='6' width='20' height='20' fill='none' stroke='%23FF4D00' stroke-width='3'/%3E%3Crect x='12' y='12' width='8' height='8' fill='%2314150F'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Attesta" />
+  <meta property="og:title" content="Attesta — the evidence layer for AI agents" />
+  <meta property="og:description" content="Record. Verify. Replay. Prove. A tamper-evident flight recorder for AI agents — pure Python, zero dependencies." />
+  <meta name="twitter:card" content="summary" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
@@ -39,8 +44,8 @@
       </h1>
       <p class="hero__sub">
         Attesta is a tamper-evident flight recorder for AI agents — a hash-chained record of
-        every LLM call, tool call, policy check and human approval. Verifiable offline by anyone.
-        Replayable without side effects. <em>Honest about divergence.</em>
+        every LLM call, tool call, policy check and human approval. Verify the integrity of any
+        recorded run offline. Replayable without side effects. <em>Honest about divergence.</em>
       </p>
       <div class="hero__cta">
         <a class="btn" href="#code">Read the code</a>
@@ -106,8 +111,9 @@
       <li class="prim" data-reveal>
         <p class="prim__num">02</p>
         <h3 class="prim__name">VERIFY</h3>
-        <p>Anyone can recompute the chain offline — no API, no server, no trust in us required.
-           Change one comma in one entry and every fingerprint after it stops matching.</p>
+        <p>Recompute the chain offline — no API, no server. Change one comma in one entry and
+           every fingerprint after it stops matching. Independent public verification arrives
+           with asymmetric signing and anchoring (see §04).</p>
       </li>
       <li class="prim" data-reveal>
         <p class="prim__num">03</p>
@@ -147,6 +153,25 @@ rec.ledger.save(<span class="s">"run.jsonl"</span>)</code></pre>
         <pre class="term" id="term" data-lines='["$ attesta verify run.jsonl","chain      34/34 entries linked ✓","merkle     a3f9c2e1 recomputed ✓","seal       signature valid ✓","verdict    INTACT — nothing altered"]'><code></code><span class="term__cursor" aria-hidden="true">▮</span></pre>
       </div>
     </div>
+
+    <div class="quickstart" data-reveal>
+      <p class="codeblock__title quickstart__title">RUN IT — UNDER TWO MINUTES, PYTHON 3.9+, NO DEPENDENCIES</p>
+<pre><code>$ git clone https://github.com/VatsalAbhani/AI_agents_dxb
+$ cd AI_agents_dxb/product-attesta
+$ python3 examples/demo_agent.py      <span class="c"># record a run + tamper demo</span>
+$ python3 -m pytest || for t in tests/test_*.py; do python3 $t; done</code></pre>
+    </div>
+
+    <table class="matrix" data-reveal>
+      <caption class="matrix__caption">INTEGRATION STATUS — HONEST INCOMPLETENESS</caption>
+      <tbody>
+        <tr><td>Pure Python wrapper (record / verify / replay / gateway)</td><td class="ok">AVAILABLE</td></tr>
+        <tr><td>Approval dashboard + agent service</td><td class="ok">AVAILABLE</td></tr>
+        <tr><td>Ed25519 signing + transparency-log anchoring</td><td>PLANNED</td></tr>
+        <tr><td>OpenAI Agents SDK / LangGraph adapters</td><td>PLANNED</td></tr>
+        <tr><td>MCP proxy · OpenTelemetry export</td><td>PLANNED</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- ============ §04 STRAIGHT ANSWERS ============ -->
@@ -209,7 +234,7 @@ rec.ledger.save(<span class="s">"run.jsonl"</span>)</code></pre>
     <div class="footer__meta">
       <span><span class="nav__glyph" aria-hidden="true"></span>ATTESTA · DUBAI, UAE</span>
       <span lang="ar" dir="rtl">صُنع في دبي</span>
-      <span>© 2026 · EVERY CLAIM ON THIS PAGE IS VERIFIABLE ✓</span>
+      <span>© 2026 · EVERY LIMITATION DOCUMENTED ✓</span>
     </div>
   </footer>
 
