@@ -275,7 +275,7 @@ def create_server(port=0, **svc_kwargs):
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("SERVICE_PORT", "8600"))
+    port = int(os.getenv("PORT", os.getenv("SERVICE_PORT", "8600")))
     srv = create_server(port=port)
     print("=" * 64)
     print("  LEADCODE GUARD · agent service")
