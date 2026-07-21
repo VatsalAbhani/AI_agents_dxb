@@ -54,3 +54,12 @@ Also discovered Railway push-deploys don't work without the GitHub App (L19)
 Vatsal installed the Railway GitHub App on the repo. This commit doubles as
 the webhook test: if it deploys without an API reconnect, push-to-deploy is
 confirmed and L19's manual workaround retires.
+
+## Addendum 3 — push-to-deploy CONFIRMED
+The App install alone didn't bind the API-created connections (test push at
+14:22 triggered nothing). Re-running `serviceConnect` on all three services
+AFTER the App install bound the webhook: an empty test push at 14:30:13Z
+triggered builds on all three services at 14:30:15Z. **CI/CD fully armed:
+git push → production, no manual steps.** L19's manual workaround retired.
+Note for later: each push rebuilds all 3 services — set Railway watch-paths
+per service when the bill starts mattering.
