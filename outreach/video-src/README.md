@@ -18,3 +18,12 @@ Output lands at `~/Desktop/guard-feedback-video.mp4` (~2 min render).
   (headless viewport quirk: min width 500, titlebar steals 87px).
 - `film.html?preview` renders a 9-tile still grid to `preview.png`
   instead of encoding — fast QA.
+
+## The two films
+- `film.html` → `guard-feedback-video.mp4` — 60s explainer: real product
+  frames, walkthrough tone. Best for: direct broker feedback asks.
+- `film2.html` → `guard-hook-video.mp4` — 37s kinetic thriller: one message,
+  REC/timecode chrome, grain, the refusal as drama. Best for: cold openers,
+  LinkedIn/Reels, second touch to non-responders.
+Rebuild either: start `python3 save_server.py`, open the film URL in
+headless Chrome, output POSTs back here (see make-video.sh pattern).

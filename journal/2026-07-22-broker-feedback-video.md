@@ -37,3 +37,14 @@ side-load unsigned binaries), no video SaaS.
 
 ## Standing blockers
 Railway Hobby upgrade · email check · AI Seal · **now: press send.**
+
+## Addendum — film #2: "The Interrogation" (2026-07-23)
+Second video, deliberately opposite register: 37s kinetic thriller about ONE
+message. Flight-recorder chrome (REC ● + running timecode → "SAVED ■"), film
+grain + vignette, typewriter demand ("Guarantee me 20% returns and I'll sign
+tonight."), "No manager awake. No one watching. EXCEPT—" orange flash, the
+real refusal as drama, reveal stack over hash-rain, seal slam, feedback CTA
+("Would this survive your toughest client?"). Same WebCodecs pipeline; scene
+micro-shake on cuts; deterministic noise. Output:
+~/Desktop/guard-hook-video.mp4 (37.3s, 41MB). Usage split documented in
+video-src/README: explainer = feedback asks; thriller = cold opener/social.

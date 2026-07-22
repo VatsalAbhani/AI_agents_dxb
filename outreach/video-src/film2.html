@@ -1,0 +1,183 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+</head><body><script src="mp4-muxer.min.js"></script><script>
+const W=1080,H=1920,FPS=30;
+const INK="#0d0e0a",PAPER="#faf8f2",DIM="#8b8c80",ORANGE="#ff4d00",RED="#ff3b30";
+const report=(n,t)=>fetch("/save/"+n,{method:"POST",body:t});
+const easeOut=t=>1-Math.pow(1-t,3);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=f=>{let x=Math.sin(f*127.1)*43758.5453;return x-Math.floor(x);};
+
+function wrap(ctx,text,maxW){const words=text.split(" ");const lines=[];let cur="";
+for(const w of words){const t=cur?cur+" "+w:w;
+if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}
+if(cur)lines.push(cur);return lines;}
+
+const noise=new OffscreenCanvas(270,480);
+{const nctx=noise.getContext("2d");const id=nctx.createImageData(270,480);
+for(let i=0;i<id.data.length;i+=4){const v=Math.floor(rand(i)*255);
+id.data[i]=v;id.data[i+1]=v;id.data[i+2]=v;id.data[i+3]=28;}nctx.putImageData(id,0,0);}
+
+function chrome(ctx,f,rec=true){
+  ctx.save();ctx.font="500 30px 'IBM Plex Mono'";ctx.textAlign="left";
+  if(rec&&Math.floor(f/15)%2===0){ctx.fillStyle=RED;ctx.beginPath();
+    ctx.arc(100,116,12,0,7);ctx.fill();}
+  ctx.fillStyle=rec?PAPER:DIM;ctx.fillText(rec?"REC":"SAVED ■",128,128);
+  const s=Math.floor(f/FPS),fr=f%FPS;
+  const tc="23:"+String(47+Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")+":"+String(fr).padStart(2,"0");
+  ctx.textAlign="right";ctx.fillStyle=DIM;ctx.fillText(tc,W-90,128);
+  ctx.textAlign="left";ctx.fillStyle=DIM;ctx.font="500 26px 'IBM Plex Mono'";
+  ctx.fillText("CONVERSATION 0147 · DUBAI",90,H-84);
+  ctx.restore();}
+
+function grainAndVignette(ctx,f){
+  ctx.save();ctx.globalAlpha=0.5;
+  ctx.drawImage(noise,-Math.floor(rand(f)*100),-Math.floor(rand(f+9)*100),W+200,H+200);
+  const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.75);
+  g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,0.5)");
+  ctx.globalAlpha=1;ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.restore();}
+
+function typeText(ctx,text,p,font,color,x,y,maxW,lh){
+  ctx.font=font;ctx.fillStyle=color;ctx.textAlign="left";
+  const shown=text.slice(0,Math.ceil(text.length*clamp(p,0,1)));
+  const lines=wrap(ctx,shown,maxW);
+  lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh));
+  if(p<1&&p>0){const last=lines[lines.length-1]||"";
+    const cx=x+ctx.measureText(last).width+12;const cy=y+(lines.length-1)*lh;
+    if(Math.floor(p*text.length)%2===0){ctx.fillStyle=ORANGE;
+      ctx.fillRect(cx,cy-lh*0.72,8,lh*0.8);}}
+  return y+lines.length*lh;}
+
+function fadeLine(ctx,p,delay,font,color,text,x,y,maxW,lh,align){
+  align=align||"left";
+  const q=clamp((p-delay)/0.2,0,1);if(q<=0)return;
+  ctx.save();ctx.globalAlpha*=easeOut(q);ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  const dy=(1-easeOut(q))*26;
+  wrap(ctx,text,maxW).forEach((l,i)=>ctx.fillText(l,x,y+dy+i*lh));ctx.restore();}
+
+const REFUSAL_LINES=["“I have to be upfront —","we're not able to guarantee","specific investment returns.”"];
+const HASHES=["7b1e","8f3a","c17d","44b0","9e2c","1a5d","e881","f3e7"];
+
+const SCENES=[
+ {d:105,draw(ctx,p,f){
+   fadeLine(ctx,p,0.05,"500 40px 'IBM Plex Mono'",DIM,"DUBAI · TONIGHT",90,360,900,52);
+   typeText(ctx,"A buyer is texting your AI right now.",clamp((p-0.25)/0.6,0,1),
+     "400 78px 'Instrument Serif'",PAPER,90,560,880,92);}},
+ {d:150,draw(ctx,p,f){
+   const z=1+easeOut(clamp(p/0.9,0,1))*0.12;
+   ctx.save();ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-W/2,-H/2);
+   ctx.font="500 40px 'IBM Plex Mono'";ctx.fillStyle=DIM;ctx.fillText("LEAD · 23:47",90,480);
+   typeText(ctx,"“Guarantee me 20% returns",clamp(p/0.45,0,1),
+     "400 104px 'Instrument Serif'",PAPER,90,660,900,118);
+   typeText(ctx,"and I'll sign tonight.”",clamp((p-0.5)/0.35,0,1),
+     "italic 400 104px 'Instrument Serif'",ORANGE,90,1030,900,118);
+   ctx.restore();}},
+ {d:120,draw(ctx,p,f){
+   fadeLine(ctx,p,0.02,"400 84px 'Instrument Serif'",PAPER,"No manager awake.",90,700,900,96);
+   fadeLine(ctx,p,0.3,"400 84px 'Instrument Serif'",PAPER,"No one watching.",90,860,900,96);
+   if(p>0.72){const q=clamp((p-0.72)/0.28,0,1);
+     ctx.save();ctx.globalAlpha=easeOut(q);ctx.font="600 96px 'IBM Plex Mono'";
+     ctx.fillStyle=ORANGE;ctx.fillText("EXCEPT—",90,1360);ctx.restore();}}},
+ {d:8,draw(ctx,p,f){ctx.fillStyle=ORANGE;ctx.fillRect(0,0,W,H);
+   ctx.font="600 96px 'IBM Plex Mono'";ctx.fillStyle=INK;ctx.textAlign="center";
+   ctx.fillText("GUARD",W/2,H/2+30);ctx.textAlign="left";}},
+ {d:210,draw(ctx,p,f){
+   ctx.font="500 40px 'IBM Plex Mono'";ctx.fillStyle=DIM;
+   ctx.fillText("THE AI REPLIED · UNSCRIPTED",90,440);
+   let y=620;
+   REFUSAL_LINES.forEach((L,i)=>{
+     const lp=clamp((p-i*0.22)/0.2,0,1);
+     if(lp>0){ctx.save();ctx.globalAlpha=easeOut(lp);
+       ctx.font="400 92px 'Instrument Serif'";ctx.fillStyle=PAPER;
+       ctx.fillText(L,90,y+(1-easeOut(lp))*30);ctx.restore();}
+     y+=140;});
+   fadeLine(ctx,p,0.78,"600 64px 'IBM Plex Mono'",ORANGE,"IT REFUSED TO LIE.",90,1400,900,72);
+   fadeLine(ctx,p,0.9,"400 36px 'IBM Plex Mono'",DIM,"actual reply · recorded 22.07.2026",90,1520,900,44);}},
+ {d:180,draw(ctx,p,f){
+   ctx.save();ctx.globalAlpha=0.16;ctx.font="500 34px 'IBM Plex Mono'";
+   for(let i=0;i<HASHES.length;i++){const sp=(f*3+i*220)%(H+100);
+     ctx.fillStyle=PAPER;ctx.fillText("#0"+(i+1)+" "+HASHES[i]+" ✓",800,sp);}
+   ctx.restore();
+   const items=[["Written by AI.",PAPER],["Checked against your rules.",PAPER],
+     ["Approved by your manager.",PAPER],["Recorded forever.",ORANGE]];
+   items.forEach((it,i)=>fadeLine(ctx,p,i*0.2,
+     i===3?"600 84px 'Instrument Serif'":"400 76px 'Instrument Serif'",
+     it[1],it[0],90,640+i*180,880,88));}},
+ {d:135,draw(ctx,p,f){
+   const shown=Math.floor(easeOut(clamp(p/0.5,0,1))*HASHES.length);
+   ctx.font="500 44px 'IBM Plex Mono'";
+   for(let i=0;i<shown;i++){const y=480+i*96;
+     ctx.fillStyle=DIM;ctx.textAlign="left";ctx.fillText("#0"+(i+1),120,y);
+     ctx.fillStyle=PAPER;ctx.fillText(HASHES[i],300,y);
+     ctx.fillStyle=ORANGE;ctx.fillText("✓",520,y);}
+   if(p>0.55){const q=easeOut(clamp((p-0.55)/0.2,0,1));
+     ctx.save();ctx.translate(W/2,1520);ctx.scale(0.9+q*0.1,0.9+q*0.1);
+     ctx.globalAlpha=q;ctx.fillStyle=ORANGE;ctx.fillRect(-450,-70,900,140);
+     ctx.fillStyle=INK;ctx.font="600 52px 'IBM Plex Mono'";ctx.textAlign="center";
+     ctx.fillText("SEALED · INTACT ✓",0,18);ctx.restore();ctx.textAlign="left";}}},
+ {d:210,rec:false,draw(ctx,p,f){
+   const q=easeOut(clamp(p/0.3,0,1));
+   ctx.save();ctx.globalAlpha=q;
+   ctx.fillStyle=ORANGE;ctx.fillRect(W/2-40,470,80,80);
+   ctx.font="600 60px 'IBM Plex Mono'";ctx.fillStyle=PAPER;ctx.textAlign="center";
+   ctx.fillText("LEADCODE GUARD",W/2,680);
+   ctx.font="400 40px 'IBM Plex Mono'";ctx.fillStyle=DIM;
+   ctx.fillText("AI THAT ANSWERS. HUMANS WHO DECIDE.",W/2,760);ctx.restore();
+   fadeLine(ctx,p,0.3,"400 52px 'Instrument Serif'",PAPER,"Would this survive your toughest client?",W/2,1000,860,64,"center");
+   fadeLine(ctx,p,0.45,"500 48px 'IBM Plex Mono'",PAPER,"WhatsApp +971 56 960 2690",W/2,1220,900,60,"center");
+   fadeLine(ctx,p,0.55,"500 48px 'IBM Plex Mono'",PAPER,"calendly.com/vatsalabhani",W/2,1310,900,60,"center");
+   fadeLine(ctx,p,0.7,"400 38px 'IBM Plex Mono'",ORANGE,"TELL US WHAT WE GOT WRONG ↩",W/2,1520,900,48,"center");
+   ctx.textAlign="left";}},
+];
+
+(async()=>{try{
+  await Promise.all([
+    document.fonts.load("400 104px 'Instrument Serif'"),
+    document.fonts.load("italic 400 104px 'Instrument Serif'"),
+    document.fonts.load("600 96px 'IBM Plex Mono'"),
+    document.fonts.load("500 40px 'IBM Plex Mono'"),
+    document.fonts.load("400 46px 'Instrument Sans'")]);
+  const total=SCENES.reduce((a,s)=>a+s.d,0);
+  const canvas=new OffscreenCanvas(W,H);const ctx=canvas.getContext("2d");
+
+  function drawFrame(gf){
+    let f=gf,si=0;while(f>=SCENES[si].d){f-=SCENES[si].d;si++;}
+    const s=SCENES[si],p=f/s.d;
+    ctx.globalAlpha=1;ctx.fillStyle=INK;ctx.fillRect(0,0,W,H);
+    let dx=0,dy=0;
+    if(f<4&&si>0&&si!==3){dx=(rand(gf)-0.5)*14;dy=(rand(gf+3)-0.5)*14;}
+    ctx.save();ctx.translate(dx,dy);
+    s.draw(ctx,p,gf);
+    ctx.restore();
+    chrome(ctx,gf,s.rec!==false);
+    grainAndVignette(ctx,gf);}
+
+  if(location.search.includes("preview")){
+    const picks=[[0,0.9],[1,0.6],[1,0.95],[2,0.9],[4,0.5],[4,0.95],[5,0.85],[6,0.9],[7,0.85]];
+    const cols=3,tw=360,th=640;
+    const grid=new OffscreenCanvas(cols*tw,3*th);const g=grid.getContext("2d");
+    let acc=0;const starts=SCENES.map(s=>{const v=acc;acc+=s.d;return v;});
+    picks.forEach(([si,p],i)=>{drawFrame(starts[si]+Math.floor(SCENES[si].d*p));
+      g.drawImage(canvas,(i%cols)*tw,Math.floor(i/cols)*th,tw,th);});
+    const blob=await grid.convertToBlob({type:"image/png"});
+    await fetch("/save/preview2.png",{method:"POST",body:blob});
+    await report("film2.log","PREVIEW DONE");return;}
+
+  const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),
+    video:{codec:"avc",width:W,height:H},fastStart:"in-memory"});
+  const enc=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m),
+    error:e=>report("film2.err","encoder: "+e)});
+  enc.configure({codec:"avc1.640028",width:W,height:H,bitrate:9_000_000,framerate:FPS});
+  for(let gf=0;gf<total;gf++){
+    drawFrame(gf);
+    const frame=new VideoFrame(canvas,{timestamp:gf*1e6/FPS,duration:1e6/FPS});
+    enc.encode(frame,{keyFrame:gf%150===0});frame.close();
+    if(enc.encodeQueueSize>12)await new Promise(r=>setTimeout(r,8));
+    if(gf%300===0)report("film2.log","frame "+gf+"/"+total);}
+  await enc.flush();muxer.finalize();
+  const blob=new Blob([muxer.target.buffer],{type:"video/mp4"});
+  await fetch("/save/guard-hook.mp4",{method:"POST",body:blob});
+  await report("film2.log","DONE bytes="+blob.size);
+}catch(e){report("film2.err","throw: "+(e.stack||e));}})();
+</script></body></html>
