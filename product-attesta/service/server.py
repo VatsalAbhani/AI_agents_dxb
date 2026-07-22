@@ -172,9 +172,9 @@ body{font-family:ui-monospace,Menlo,monospace;background:#faf8f2;color:#14150f;
 max-width:26rem;margin:2rem auto;padding:0 1rem}
 h1{font-size:1rem;letter-spacing:.15em}label{display:block;font-size:.7rem;
 letter-spacing:.12em;margin:1rem 0 .3rem;color:#55564b}
-input,select,textarea{width:100%%;padding:.7rem;border:1px solid #14150f;
+input,select,textarea{width:100%;padding:.7rem;border:1px solid #14150f;
 background:#fff;font:inherit;box-sizing:border-box}
-button{margin-top:1.2rem;width:100%%;padding:.9rem;background:#ff4d00;color:#14150f;
+button{margin-top:1.2rem;width:100%;padding:.9rem;background:#ff4d00;color:#14150f;
 border:1px solid #ff4d00;font:inherit;letter-spacing:.08em;cursor:pointer}
 #out{margin-top:1rem;font-size:.75rem;color:#55564b;white-space:pre-wrap}
 </style></head><body>
@@ -200,6 +200,80 @@ async function go(){
 </script></body></html>"""
 
 
+CHAT_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Chat with us</title><style>
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,'Instrument Sans',Segoe UI,sans-serif;background:#efeae2;
+display:flex;flex-direction:column;height:100dvh}
+header{background:#14150f;color:#faf8f2;padding:.8rem 1rem;display:flex;gap:.6rem;align-items:center}
+header .dot{width:.65rem;height:.65rem;background:#ff4d00;border-radius:50%}
+header b{font-size:.95rem}header small{color:#8b8c80;font-size:.7rem;margin-left:auto}
+#setup{margin:auto;background:#fff;border:1px solid #ddd;border-radius:12px;padding:1.4rem;
+width:min(20rem,90vw);box-shadow:0 8px 30px rgba(0,0,0,.08)}
+#setup label{display:block;font-size:.7rem;color:#555;letter-spacing:.08em;margin:.9rem 0 .3rem}
+#setup input,#setup select{width:100%;padding:.7rem;border:1px solid #ccc;border-radius:8px;font:inherit}
+#setup button{margin-top:1.2rem;width:100%;padding:.85rem;background:#ff4d00;color:#14150f;
+border:none;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+#chat{flex:1;overflow-y:auto;padding:1rem;display:none;flex-direction:column;gap:.5rem}
+.msg{max-width:80%;padding:.6rem .85rem;border-radius:10px;font-size:.95rem;line-height:1.4;
+white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.me{align-self:flex-end;background:#ffd9c7}
+.them{align-self:flex-start;background:#fff}
+#typing{align-self:flex-start;color:#888;font-size:.85rem;display:none;padding:.2rem .5rem}
+footer{display:none;gap:.5rem;padding:.7rem;background:#f0ede5;border-top:1px solid #ddd}
+#box{flex:1;padding:.8rem;border:1px solid #ccc;border-radius:20px;font:inherit;outline:none}
+#send{background:#ff4d00;border:none;color:#14150f;font-weight:700;border-radius:50%;
+width:2.9rem;height:2.9rem;cursor:pointer;font-size:1.1rem}
+#end{background:none;border:none;color:#999;font-size:.65rem;letter-spacing:.1em;cursor:pointer}
+</style></head><body>
+<header><span class="dot"></span><b id="hdr">ABC Real Estate</b><small>powered by Leadcode Guard</small></header>
+<div id="setup">
+  <b>Start a conversation</b>
+  <label>YOUR NAME</label><input id="nm" placeholder="e.g. Rahul">
+  <label>YOU ARE A…</label><select id="rel"><option value="new">New enquirer</option>
+  <option value="returning">Returning client</option><option value="referral">Referral</option></select>
+  <button onclick="begin()">Start chatting</button>
+</div>
+<div id="chat"></div><div id="typing">typing…</div>
+<footer><button id="end" onclick="endChat()">END &amp; SEAL ▚</button>
+<input id="box" placeholder="Message" onkeydown="if(event.key==='Enter')send()">
+<button id="send" onclick="send()">↑</button></footer>
+<script>
+const KEY=new URLSearchParams(location.search).get('key')||'';
+const H={'content-type':'application/json','x-api-key':KEY};
+let cid=sessionStorage.getItem('guard-cid')||null, name='', shown=0;
+if(cid){enterChat();}
+function enterChat(){setup.style.display='none';chat.style.display='flex';
+document.querySelector('footer').style.display='flex';poll();setInterval(poll,2500);}
+function begin(){name=nm.value.trim()||'Guest';enterChat();box.focus();}
+async function send(){
+  const t=box.value.trim();if(!t)return;box.value='';
+  add(t,'me');
+  if(!cid){const r=await fetch('/leads',{method:'POST',headers:H,body:JSON.stringify(
+    {name:name,relationship:rel.value,source:'live-trial',message:t})});
+    cid=(await r.json()).id;sessionStorage.setItem('guard-cid',cid);}
+  else{await fetch('/leads/'+cid+'/message',{method:'POST',headers:H,body:JSON.stringify({text:t})});}
+  typing.style.display='block';}
+function add(t,cls){const d=document.createElement('div');d.className='msg '+cls;
+d.textContent=t;chat.appendChild(d);chat.scrollTop=1e9;}
+async function poll(){
+  if(!cid)return;
+  const r=await fetch('/leads/'+cid+'?key='+KEY);if(!r.ok)return;
+  const s=await r.json();
+  const visible=s.turns.filter(t=>t.role==='lead'||(t.role==='agent'&&t.status==='sent'));
+  if(visible.length>shown){chat.innerHTML='';
+    visible.forEach(t=>add(t.text,t.role==='lead'?'me':'them'));shown=visible.length;}
+  const last=s.turns[s.turns.length-1];
+  typing.style.display=(last&&last.role==='lead')?'block':'none';}
+async function endChat(){
+  if(!cid)return;
+  await fetch('/leads/'+cid+'/close',{method:'POST',headers:H});
+  sessionStorage.removeItem('guard-cid');
+  location.href='/leads/'+cid+'/report?key='+KEY;}
+</script></body></html>"""
+
+
 def make_handler(svc):
     class Handler(BaseHTTPRequestHandler):
         def _send(self, code, obj, ctype="application/json"):
@@ -219,22 +293,35 @@ def make_handler(svc):
             except (ValueError, json.JSONDecodeError):
                 return None
 
+        def _query_key(self, query):
+            return dict(p.split("=", 1) for p in query.split("&") if "=" in p).get("key", "")
+
         def do_GET(self):
             path, _, query = self.path.partition("?")
             if path == "/health":
                 return self._send(200, {"ok": True, "drafter": drafter_mode(),
                                         "dashboard": svc.dashboard})
-            if path == "/":
-                key = dict(p.split("=", 1) for p in query.split("&") if "=" in p).get("key", "")
-                if key != svc.api_key:
-                    return self._send(403, "Forbidden — open /?key=<SERVICE_API_KEY>", "text/plain")
-                return self._send(200, INTAKE_FORM, "text/html")
-            if not self._authed():
+            if path in ("/", "/chat"):
+                if self._query_key(query) != svc.api_key:
+                    return self._send(403, "Forbidden — open with ?key=<SERVICE_API_KEY>", "text/plain")
+                return self._send(200, CHAT_PAGE if path == "/chat" else INTAKE_FORM, "text/html")
+            # GETs accept the key via header or ?key= (lets the chat page + report links work)
+            if not self._authed() and self._query_key(query) != svc.api_key:
                 return self._send(401, {"error": "invalid api key"})
             if path == "/leads":
                 return self._send(200, {"leads": svc.store.list()})
+            parts = [p for p in path.split("/") if p]
+            if len(parts) == 3 and parts[0] == "leads" and parts[2] == "report":
+                row = svc.store.get(parts[1])
+                if not row:
+                    return self._send(404, {"error": "not found"})
+                rp = os.path.join(svc.report_dir, f"{parts[1]}.md")
+                if row["status"] != "closed" or not os.path.exists(rp):
+                    return self._send(409, {"error": "close the conversation first"})
+                with open(rp, encoding="utf-8") as f:
+                    return self._send(200, f.read(), "text/plain; charset=utf-8")
             if path.startswith("/leads/"):
-                state = svc.lead_state(path.split("/")[2])
+                state = svc.lead_state(parts[1])
                 return self._send(200, state) if state else self._send(404, {"error": "not found"})
             self._send(404, {"error": "not found"})
 

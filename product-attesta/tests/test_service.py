@@ -127,12 +127,30 @@ entries = [json.loads(l) for l in open(ledger_path) if l.strip() and "_seal" not
 ok("single unbroken chain on disk", entries[0]["prev_hash"] == "0" * 64
    and all(entries[i]["prev_hash"] == entries[i - 1]["entry_hash"] for i in range(1, len(entries))))
 
+print("\n== lead chat page + report endpoint ==")
+import urllib.request as _ur
+def raw_get(url):
+    try:
+        with _ur.urlopen(url, timeout=10) as r:
+            return r.status, r.read().decode()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode()
+
+code2, body2 = raw_get(base2 + f"/chat?key={KEY}")
+ok("chat page serves with key", code2 == 200 and "Start a conversation" in body2)
+code2, _b = raw_get(base2 + "/chat?key=wrong")
+ok("chat page 403 without key", code2 == 403)
+code2, _b = raw_get(base2 + f"/leads/{cid}/report?key={KEY}")
+ok("report 409 before close", code2 == 409)
+
 print("\n== close: seal + verify + report ==")
 code, out = call(base2, "POST", f"/leads/{cid}/close")
 ok("close returns INTACT", code == 200 and out["intact"] is True)
 ok("audit report written", os.path.exists(out["report"]))
 v = verify_ledger(ledger_path, key=os.getenv("LEDGER_KEY", "pilot-ledger-key"))
 ok("ledger verifies independently", v["intact"] is True)
+code2, body2 = raw_get(base2 + f"/leads/{cid}/report?key={KEY}")
+ok("report downloadable after close", code2 == 200 and "INTACT" in body2)
 call(base2, "POST", f"/leads/{cid}/message", {"text": "one more thing"})
 time.sleep(0.8)
 _, state = call(base2, "GET", f"/leads/{cid}")
