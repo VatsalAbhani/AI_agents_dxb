@@ -71,3 +71,15 @@ invisible, as in real life), "typing…" while the manager decides, END & SEAL
 serves the audit report. 18 service tests. Deployed via the now-working
 push-to-deploy pipeline (Vatsal's screenshot: "via GitHub"). Intake form
 100%% CSS literal fixed.
+
+## Addendum 5 — Vatsal's live trial + report wording fix
+Vatsal ran the full two-device trial and sealed a real 39-action report:
+edited approval, two rejections, handoff:requested fired, chain INTACT.
+"Risky blocked: 0" = Claude's drafts were compliant (layer 1 held); the
+rejections were manager judgment — which is the story the report should tell.
+His report surfaced an L17 recurrence: the CLIENT-FACING report footer still
+said "independently verifiable" — fixed to tamper-evident wording in
+report.py + ledger.py docstring (123 tests green). The claim-consistency
+grep must include generated documents, not just websites.
+Report polish parking lot: show lead name/client tier, decision reasons,
+handoff timing in the timeline.

@@ -4,7 +4,7 @@ Attesta — the tamper-evident ledger.
 Every agent action is appended as a hash-chained entry: each entry commits to
 the hash of the previous one, so any later edit breaks the chain. At the end of
 a run the ledger is sealed with a Merkle root and a signature, giving an
-independently verifiable fingerprint of the whole run.
+tamper-evident fingerprint of the whole run.
 
 v0 uses HMAC-SHA256 for the seal signature so the demo runs with zero
 dependencies. Production swaps this for asymmetric signing (KMS / Sigstore) and
