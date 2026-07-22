@@ -63,3 +63,11 @@ triggered builds on all three services at 14:30:15Z. **CI/CD fully armed:
 git push → production, no manual steps.** L19's manual workaround retired.
 Note for later: each push rebuilds all 3 services — set Railway watch-paths
 per service when the bill starts mattering.
+
+## Addendum 4 — lead-facing chat page (the live trial)
+Built `/chat?key=` on the agent service: mobile chat where the CLIENT talks
+to the deployed agent — sees only sent messages (drafts/blocks/approvals
+invisible, as in real life), "typing…" while the manager decides, END & SEAL
+serves the audit report. 18 service tests. Deployed via the now-working
+push-to-deploy pipeline (Vatsal's screenshot: "via GitHub"). Intake form
+100%% CSS literal fixed.
