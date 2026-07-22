@@ -205,10 +205,11 @@ CHAT_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Chat with us</title><style>
 *{box-sizing:border-box;margin:0}
 body{font-family:-apple-system,'Instrument Sans',Segoe UI,sans-serif;background:#efeae2;
-display:flex;flex-direction:column;height:100dvh}
+display:flex;flex-direction:column;height:100dvh;overflow-x:hidden;max-width:100vw}
+#chat{overflow-x:hidden}
 header{background:#14150f;color:#faf8f2;padding:.8rem 1rem;display:flex;gap:.6rem;align-items:center}
 header .dot{width:.65rem;height:.65rem;background:#ff4d00;border-radius:50%}
-header b{font-size:.95rem}header small{color:#8b8c80;font-size:.7rem;margin-left:auto}
+header b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw}header small{color:#8b8c80;font-size:.7rem;margin-left:auto}
 #setup{margin:auto;background:#fff;border:1px solid #ddd;border-radius:12px;padding:1.4rem;
 width:min(20rem,90vw);box-shadow:0 8px 30px rgba(0,0,0,.08)}
 #setup label{display:block;font-size:.7rem;color:#555;letter-spacing:.08em;margin:.9rem 0 .3rem}
@@ -217,12 +218,12 @@ width:min(20rem,90vw);box-shadow:0 8px 30px rgba(0,0,0,.08)}
 border:none;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
 #chat{flex:1;overflow-y:auto;padding:1rem;display:none;flex-direction:column;gap:.5rem}
 .msg{max-width:80%;padding:.6rem .85rem;border-radius:10px;font-size:.95rem;line-height:1.4;
-white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.06);overflow-wrap:anywhere;min-width:0;max-width:min(80%,84vw)}
 .me{align-self:flex-end;background:#ffd9c7}
 .them{align-self:flex-start;background:#fff}
 #typing{align-self:flex-start;color:#888;font-size:.85rem;display:none;padding:.2rem .5rem}
 footer{display:none;gap:.5rem;padding:.7rem;background:#f0ede5;border-top:1px solid #ddd}
-#box{flex:1;padding:.8rem;border:1px solid #ccc;border-radius:20px;font:inherit;outline:none}
+#box{flex:1;min-width:0;padding:.8rem;border:1px solid #ccc;border-radius:20px;font:inherit;outline:none}
 #send{background:#ff4d00;border:none;color:#14150f;font-weight:700;border-radius:50%;
 width:2.9rem;height:2.9rem;cursor:pointer;font-size:1.1rem}
 #end{background:none;border:none;color:#999;font-size:.65rem;letter-spacing:.1em;cursor:pointer}
@@ -242,7 +243,7 @@ width:2.9rem;height:2.9rem;cursor:pointer;font-size:1.1rem}
 <script>
 const KEY=new URLSearchParams(location.search).get('key')||'';
 const H={'content-type':'application/json','x-api-key':KEY};
-let cid=sessionStorage.getItem('guard-cid')||null, name='', shown=0;
+let cid=new URLSearchParams(location.search).get('cid')||sessionStorage.getItem('guard-cid')||null, name='', shown=0;
 if(cid){enterChat();}
 function enterChat(){setup.style.display='none';chat.style.display='flex';
 document.querySelector('footer').style.display='flex';poll();setInterval(poll,2500);}

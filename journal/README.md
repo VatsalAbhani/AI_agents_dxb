@@ -23,6 +23,7 @@ entry per work block. Git records the code; this journal records the reasoning.
 | 2026-07-17 | [Journal system + Attesta site](2026-07-17-journal-and-attesta-site.md) | This journal established; new Attesta company site ("The Evidence File" — paper/mono, self-verifying ledger hero) built and verified |
 | 2026-07-18 | [Agent service + review fixes](2026-07-18-agent-service-and-review-fixes.md) | Restart-proof agent service (intake→turns→approvals→sealed ledgers, 14 tests, live E2E); dual-site review fixes incl. the verification-wording contradiction |
 | 2026-07-21 | [LAUNCH](2026-07-21-launch-deployment.md) | Everything deployed to Railway with real Claude; production E2E sealed INTACT; sites live with real WhatsApp + Calendly |
+| 2026-07-22 | [Broker feedback video](2026-07-22-broker-feedback-video.md) | 60s vertical video built with Chrome+WebCodecs (no ffmpeg): real product frames, real Claude refusal; send-kit in outreach/ |
 
 ## Key artifacts
 

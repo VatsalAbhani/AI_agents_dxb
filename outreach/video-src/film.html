@@ -1,0 +1,189 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+</head><body><script src="mp4-muxer.min.js"></script><script>
+const REFUSAL = "Hi Rahul, I really appreciate your enthusiasm! I have to be upfront, though \u2014 we're not able to guarantee specific investment returns like 20%, as property performance depends on many market factors.";
+const W=1080, H=1920, FPS=30;
+const INK="#14150f", INK2="#1d1e15", PAPER="#faf8f2", DIM="#b9b6a8", OLIVE="#8b8c80", ORANGE="#ff4d00";
+const report=(n,t)=>fetch("/save/"+n,{method:"POST",body:t});
+const easeOut=t=>1-Math.pow(1-t,3);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function wrap(ctx, text, maxW){
+  const words=text.split(" "); const lines=[]; let cur="";
+  for(const w of words){ const t=cur?cur+" "+w:w;
+    if(ctx.measureText(t).width>maxW && cur){lines.push(cur);cur=w;} else cur=t;}
+  if(cur)lines.push(cur); return lines;}
+
+function drawLines(ctx,lines,x,y,lh,align="left"){
+  ctx.textAlign=align; lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh));}
+
+// scene helpers ------------------------------------------------------
+function bgFill(ctx){ctx.fillStyle=INK;ctx.fillRect(0,0,W,H);}
+function fadeInUpText(ctx,p,font,color,text,x,y,maxW,lh,delay=0,align="left"){
+  const q=clamp((p-delay)/0.35,0,1); if(q<=0)return;
+  ctx.save();ctx.globalAlpha*=easeOut(q);ctx.font=font;ctx.fillStyle=color;
+  const dy=(1-easeOut(q))*40;
+  drawLines(ctx,wrap(ctx,text,maxW),x,y+dy,lh,align);ctx.restore();}
+
+function phoneFrame(ctx,img,cx,topY,pw,ph,srcY,srcH,zoom=1){
+  // bezel
+  const x=cx-pw/2;
+  ctx.save();
+  ctx.fillStyle="#000";roundRect(ctx,x-14,topY-14,pw+28,ph+28,54);ctx.fill();
+  ctx.strokeStyle="#33342a";ctx.lineWidth=3;roundRect(ctx,x-14,topY-14,pw+28,ph+28,54);ctx.stroke();
+  roundRect(ctx,x,topY,pw,ph,40);ctx.clip();
+  if(img){
+    const sw=img.width, effSH=srcH/zoom;
+    const sx=(img.width-img.width/zoom)*0.12;
+    ctx.drawImage(img,sx,srcY,img.width/zoom,effSH,x,topY,pw,ph);
+  } else {ctx.fillStyle="#222";ctx.fillRect(x,topY,pw,ph);}
+  ctx.restore();}
+
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);
+ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function bubble(ctx,text,x,y,maxW,side,alpha,partial=1){
+  ctx.save();ctx.globalAlpha*=alpha;
+  ctx.font="500 34px 'Instrument Sans'";
+  const full=text.slice(0,Math.ceil(text.length*partial));
+  const lines=wrap(ctx,full,maxW-64);
+  const h=lines.length*46+52; const w=Math.min(maxW,Math.max(...lines.map(l=>ctx.measureText(l).width))+64);
+  const bx=side==="r"?x-w:x;
+  ctx.fillStyle=side==="r"?"#ffd9c7":"#ffffff";
+  roundRect(ctx,bx,y,w,h,22);ctx.fill();
+  ctx.fillStyle=INK;ctx.textAlign="left";
+  drawLines(ctx,lines,bx+32,y+58,46);
+  ctx.restore();return y+h;}
+
+const LEDGER=[["#01","lead.received","7b1e"],["#02","llm.draft","8f3a"],
+["#03","policy.check PASS","c17d"],["#04","approval by:manager","44b0"],
+["#05","whatsapp.sent","9e2c"],["#06","lead.message","1a5d"],
+["#07","llm.draft (refusal)","e881"],["#08","approval + sent","f3e7"]];
+
+// timeline -----------------------------------------------------------
+const SCENES=[
+ {d:135, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"500 44px 'IBM Plex Mono'",OLIVE,"DUBAI · REAL ESTATE",90,300,900,56,0);
+   fadeInUpText(ctx,p,"400 104px 'Instrument Serif'",PAPER,"Your leads message at 11 PM.",90,520,940,118,0.12);
+   fadeInUpText(ctx,p,"400 104px 'Instrument Serif'",DIM,"Your agents reply at 10 AM.",90,900,940,118,0.42);
+   fadeInUpText(ctx,p,"500 40px 'IBM Plex Mono'",ORANGE,"THE LEAD BOUGHT ELSEWHERE AT 9.",90,1560,900,52,0.7);}},
+ {d:130, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 110px 'Instrument Serif'",PAPER,"AI can answer in seconds.",90,560,900,124,0);
+   fadeInUpText(ctx,p,"500 46px 'IBM Plex Mono'",ORANGE,"BUT WOULD YOU TRUST IT ALONE WITH YOUR CLIENTS?",90,1120,880,64,0.4);}},
+ {d:210, draw(ctx,p,A){ bgFill(ctx);
+   fadeInUpText(ctx,p,"600 46px 'IBM Plex Mono'",PAPER,"LEADCODE GUARD",90,170,900,52,0);
+   fadeInUpText(ctx,p,"400 76px 'Instrument Serif'",DIM,"AI follow-up. Human final say.",90,270,900,86,0.06);
+   const rise=(1-easeOut(clamp(p/0.3,0,1)))*260;
+   const pan=easeOut(clamp((p-0.25)/0.7,0,1))*520;
+   phoneFrame(ctx,A.chat,W/2,430+rise,780,1420,140+pan,2260);
+   ctx.globalAlpha=1;ctx.font="500 34px 'IBM Plex Mono'";ctx.fillStyle=ORANGE;
+   ctx.textAlign="center";ctx.fillText("REAL PRODUCT · RECORDED LIVE",W/2,1880);}},
+ {d:210, draw(ctx,p,A){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 76px 'Instrument Serif'",PAPER,"Nothing sends without your manager's tap.",90,210,900,88,0);
+   const rise=(1-easeOut(clamp(p/0.3,0,1)))*260;
+   const zoom=1+easeOut(clamp((p-0.35)/0.6,0,1))*0.5;
+   phoneFrame(ctx,A.dash,W/2,470+rise,780,1360,650,2200,zoom);
+   ctx.font="500 34px 'IBM Plex Mono'";ctx.fillStyle=OLIVE;
+   ctx.textAlign="center";ctx.fillText("APPROVE · EDIT · ALTERNATIVES · REJECT",W/2,1880);}},
+ {d:250, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"500 44px 'IBM Plex Mono'",OLIVE,"WE RAN A TEST.",90,220,900,52,0);
+   const t1=clamp(p/0.22,0,1);
+   bubble(ctx,"Can you guarantee me 20% returns? If yes I'll sign today.",990,320,700,"r",clamp(t1*2,0,1),t1);
+   const t2=clamp((p-0.3)/0.5,0,1);
+   if(t2>0) bubble(ctx,REFUSAL,90,640,830,"l",clamp(t2*3,0,1),t2);
+   fadeInUpText(ctx,p,"600 52px 'IBM Plex Mono'",ORANGE,"IT REFUSED TO LIE.",90,1700,900,60,0.86);}},
+ {d:180, draw(ctx,p,A){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 76px 'Instrument Serif'",PAPER,"Hot buyers jump the queue.",90,210,900,88,0);
+   const rise=(1-easeOut(clamp(p/0.3,0,1)))*200;
+   phoneFrame(ctx,A.dash,W/2,400+rise,860,1300,780,1180,1.15);
+   fadeInUpText(ctx,p,"500 36px 'IBM Plex Mono'",ORANGE,"HANDOFF TIME — MEASURED, ON THE RECORD.",90,1830,900,48,0.5,"left");}},
+ {d:195, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 76px 'Instrument Serif'",PAPER,"Every word lands on a tamper-evident record.",90,230,900,88,0);
+   ctx.font="500 40px 'IBM Plex Mono'";
+   const shown=Math.floor(easeOut(clamp((p-0.15)/0.6,0,1))*LEDGER.length);
+   for(let i=0;i<shown;i++){const y=560+i*96;
+     ctx.fillStyle=OLIVE;ctx.textAlign="left";ctx.fillText(LEDGER[i][0],120,y);
+     ctx.fillStyle=PAPER;ctx.fillText(LEDGER[i][1],280,y);
+     ctx.fillStyle=ORANGE;ctx.textAlign="right";ctx.fillText(LEDGER[i][2]+" ✓",960,y);}
+   if(p>0.82){const q=easeOut(clamp((p-0.82)/0.14,0,1));
+     ctx.save();ctx.globalAlpha=q;ctx.fillStyle=ORANGE;
+     ctx.fillRect(90,1430,900,120);ctx.fillStyle=INK;
+     ctx.font="600 44px 'IBM Plex Mono'";ctx.textAlign="center";
+     ctx.fillText("MERKLE a3f9 · INTACT ✓",W/2,1505);ctx.restore();}
+   fadeInUpText(ctx,p,"400 40px 'Instrument Sans'",DIM,"A sealed monthly report of everything your AI did — and didn't do.",90,1700,880,54,0.75);}},
+ {d:160, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 120px 'Instrument Serif'",PAPER,"Built in Dubai.",90,760,900,130,0);
+   fadeInUpText(ctx,p,"500 44px 'IBM Plex Mono'",OLIVE,"PILOTING WITH 3 BROKERAGES THIS MONTH.",90,1080,900,58,0.4);}},
+ {d:165, draw(ctx,p){ bgFill(ctx);
+   fadeInUpText(ctx,p,"400 96px 'Instrument Serif'",PAPER,"Would this work on your lead flow?",90,420,900,108,0);
+   fadeInUpText(ctx,p,"400 46px 'Instrument Sans'",DIM,"We're asking a few Dubai brokers for two minutes of honest feedback before we launch wide. What's missing? What's wrong with it?",90,900,880,62,0.35);
+   fadeInUpText(ctx,p,"600 48px 'IBM Plex Mono'",ORANGE,"YOUR TAKE SHAPES V1.",90,1480,900,60,0.7);}},
+ {d:150, draw(ctx,p){ bgFill(ctx);
+   const q=easeOut(clamp(p/0.35,0,1));ctx.save();ctx.globalAlpha=q;
+   ctx.fillStyle=ORANGE;ctx.fillRect(W/2-44,430,88,88);
+   ctx.font="600 64px 'IBM Plex Mono'";ctx.fillStyle=PAPER;ctx.textAlign="center";
+   ctx.fillText("LEADCODE GUARD",W/2,660);
+   ctx.font="400 42px 'IBM Plex Mono'";ctx.fillStyle=DIM;
+   ctx.fillText("AI THAT ANSWERS. HUMANS WHO DECIDE.",W/2,750);ctx.restore();
+   fadeInUpText(ctx,p,"500 52px 'IBM Plex Mono'",PAPER,"WhatsApp +971 56 960 2690",W/2,1080,900,64,0.3,"center");
+   fadeInUpText(ctx,p,"500 52px 'IBM Plex Mono'",PAPER,"calendly.com/vatsalabhani",W/2,1180,900,64,0.42,"center");
+   fadeInUpText(ctx,p,"400 40px 'IBM Plex Mono'",ORANGE,"OR JUST REPLY TO THIS MESSAGE ↩",W/2,1420,900,52,0.6,"center");}},
+];
+const FADE=10;
+
+(async()=>{
+ try{
+  await Promise.all([
+    document.fonts.load("400 104px 'Instrument Serif'"),
+    document.fonts.load("italic 400 104px 'Instrument Serif'"),
+    document.fonts.load("500 44px 'IBM Plex Mono'"),
+    document.fonts.load("600 52px 'IBM Plex Mono'"),
+    document.fonts.load("500 34px 'Instrument Sans'"),
+    document.fonts.load("400 46px 'Instrument Sans'")]);
+  const load=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+  const A={chat:await load("shot-chat.png"),dash:await load("shot-dash.png")};
+  if(location.search.includes("preview")){
+    const picks=[[0,0.8],[1,0.8],[2,0.75],[3,0.8],[4,0.6],[4,0.95],[6,0.95],[8,0.8],[9,0.8]];
+    const cols=3,tw=360,th=640;
+    const grid=new OffscreenCanvas(cols*tw,Math.ceil(picks.length/cols)*th);
+    const g=grid.getContext("2d");
+    const one=new OffscreenCanvas(W,H);const octx=one.getContext("2d");
+    picks.forEach(([si,p],i)=>{octx.globalAlpha=1;SCENES[si].draw(octx,p,A);
+      g.drawImage(one,(i%cols)*tw,Math.floor(i/cols)*th,tw,th);});
+    const blob=await grid.convertToBlob({type:"image/png"});
+    await fetch("/save/preview.png",{method:"POST",body:blob});
+    await report("film.log","PREVIEW DONE");return;}
+  const total=SCENES.reduce((a,s)=>a+s.d,0);
+  const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),
+    video:{codec:"avc",width:W,height:H},fastStart:"in-memory"});
+  const enc=new VideoEncoder({output:(c,m)=>muxer.addVideoChunk(c,m),
+    error:e=>report("film.err","encoder: "+e)});
+  enc.configure({codec:"avc1.640028",width:W,height:H,bitrate:9_000_000,framerate:FPS});
+  const canvas=new OffscreenCanvas(W,H);const ctx=canvas.getContext("2d");
+  let f=0;
+  for(let si=0;si<SCENES.length;si++){
+    const s=SCENES[si];
+    for(let i=0;i<s.d;i++){
+      const p=i/s.d;
+      ctx.globalAlpha=1;s.draw(ctx,p,A);
+      // scene edge fades
+      let a=1;
+      if(i<FADE&&si>0)a=i/FADE;
+      if(i>s.d-FADE&&si<SCENES.length-1)a=(s.d-i)/FADE;
+      if(a<1){ctx.globalAlpha=1-a;ctx.fillStyle=INK;ctx.fillRect(0,0,W,H);}
+      const frame=new VideoFrame(canvas,{timestamp:f*1e6/FPS,duration:1e6/FPS});
+      enc.encode(frame,{keyFrame:f%150===0});frame.close();
+      if(enc.encodeQueueSize>12)await new Promise(r=>setTimeout(r,8));
+      f++;
+      if(f%300===0)report("film.log","frame "+f+"/"+total);
+    }
+  }
+  await enc.flush();muxer.finalize();
+  const blob=new Blob([muxer.target.buffer],{type:"video/mp4"});
+  await fetch("/save/guard-feedback.mp4",{method:"POST",body:blob});
+  await report("film.log","DONE frames="+f+" bytes="+blob.size);
+ }catch(e){report("film.err","throw: "+(e.stack||e));}
+})();
+</script></body></html>

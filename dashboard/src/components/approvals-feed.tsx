@@ -241,14 +241,14 @@ export function ApprovalsFeed() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-base font-semibold">{d.lead_name}</span>
                   {d.priority === 1 && (
-                    <Badge className="bg-primary font-mono text-[10px] text-primary-foreground">
-                      ⚡ HIGH INTENT — HANDOFF CLOCK RUNNING
+                    <Badge className="bg-primary font-mono text-[10px] text-primary-foreground whitespace-normal">
+                      ⚡ HIGH INTENT · CLOCK RUNNING
                     </Badge>
                   )}
                   {relationshipLead && (
                     <Badge
                       variant="secondary"
-                      className="font-mono text-[10px] uppercase"
+                      className="font-mono text-[10px] uppercase whitespace-normal"
                       title="Relationship lead — the approved text goes to the assigned advisor to send personally"
                     >
                       ✋ {d.relationship} · HUMAN SENDER
